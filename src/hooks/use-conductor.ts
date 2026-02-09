@@ -129,6 +129,10 @@ export function useConductor() {
                         content = content.replace(/<think>[\s\S]*?<\/think>/g, "").trim();
                     }
 
+                    let role: "user" | "assistant" | "system" = "assistant";
+                    if (m.senderId === 'user') role = "user";
+                    else if (m.senderId === 'system') role = "system";
+
                     return {
                         role,
                         content: `[${name}]: ${content}`
@@ -278,5 +282,29 @@ ${currentAgent.systemPrompt}
         }
     };
 
-    return { stop, isGenerating, regenerate };
+    const endDebate = async () => {
+        // 1. Stop everything
+        stop();
+        setStatus('paused');
+
+        // 2. Find moderator
+        const state = useRoomStore.getState();
+        const moderator = state.agents.find(a => a.role === 'host') || state.agents[0];
+
+        if (moderator) {
+            // 3. Inject closing instruction
+            addMessage({
+                role: 'system',
+                senderId: 'system',
+                content: "[SYSTEM]: The debate has been ended by the user. Moderator, please provide a final concluding summary of the debate, highlighting key points and acknowledging all participants."
+            });
+
+            // 4. Trigger turn after a short delay
+            setTimeout(() => {
+                setTurn(moderator.id);
+            }, 500);
+        }
+    };
+
+    return { stop, isGenerating, regenerate, endDebate };
 }
