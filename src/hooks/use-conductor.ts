@@ -123,13 +123,15 @@ export function useConductor() {
                     const sender = state.agents.find(a => a.id === m.senderId);
                     const name = sender ? sender.name : (m.senderId === 'user' ? 'User' : 'Unknown');
 
-                    let role: "user" | "assistant" | "system" = "assistant";
-                    if (m.senderId === 'user') role = "user";
-                    else if (m.senderId === 'system') role = "system";
+                    let content = m.content;
+                    // DeepSeek Reasoner guidance: ignore reasoning_content from history
+                    if (currentAgent.modelId === "deepseek-reasoner") {
+                        content = content.replace(/<think>[\s\S]*?<\/think>/g, "").trim();
+                    }
 
                     return {
                         role,
-                        content: `[${name}]: ${m.content}`
+                        content: `[${name}]: ${content}`
                     };
                 });
 
