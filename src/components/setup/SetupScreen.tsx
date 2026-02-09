@@ -6,17 +6,22 @@ import { useModelStore } from "@/hooks/use-model-store";
 import { v4 as uuidv4 } from "uuid";
 import { ArrowRight, Plus, Trash2, Settings, User, Tv, Bot, AlertCircle } from "lucide-react";
 import { useRouter } from "next/navigation";
-import { IAgent, UserRole } from "@/types";
+import { IAgent, UserRole, IRoomState } from "@/types";
 import { ModelManager } from "@/components/models/ModelManager";
 
 export function SetupScreen() {
     const router = useRouter();
-    const { agents, addAgent, removeAgent, resetRoom, setTopic, setUserRole, setStatus } = useRoomStore();
-    const { providers } = useModelStore();
-
     const [step, setStep] = useState(1);
     const [localTopic, setLocalTopic] = useState("");
     const [localRole, setLocalRole] = useState<UserRole>("participant");
+    const [localDebateMode, setLocalDebateMode] = useState<IRoomState['debateMode']>("standard");
+    const [localMaxRounds, setLocalMaxRounds] = useState(3);
+
+    const {
+        agents, addAgent, removeAgent, resetRoom, setTopic, setUserRole, setStatus,
+        setDebateMode, setMaxRounds
+    } = useRoomStore();
+    const { providers } = useModelStore();
 
     // Host Config (if user is not host)
     const [hostProviderId, setHostProviderId] = useState("openai");
@@ -38,6 +43,8 @@ export function SetupScreen() {
             if (!localTopic.trim()) return;
             setTopic(localTopic);
             setUserRole(localRole);
+            setDebateMode(localDebateMode);
+            setMaxRounds(localMaxRounds);
             setStep(2);
         } else {
             // Start Debate
@@ -135,6 +142,41 @@ export function SetupScreen() {
                                         onChange={(e) => setLocalTopic(e.target.value)}
                                         autoFocus
                                     />
+                                </div>
+
+                                <div>
+                                    <label className="block text-sm font-medium mb-2 text-zinc-600 dark:text-zinc-400">Debate Mode</label>
+                                    <div className="grid grid-cols-3 gap-3">
+                                        <button
+                                            onClick={() => setLocalDebateMode('standard')}
+                                            className={`p-3 rounded-xl border text-sm font-medium transition-all ${localDebateMode === 'standard' ? 'bg-black text-white dark:bg-white dark:text-black border-black dark:border-white' : 'bg-zinc-50 dark:bg-zinc-800 border-zinc-200 dark:border-zinc-700'}`}
+                                        >
+                                            Standard (Free)
+                                        </button>
+                                        <button
+                                            onClick={() => setLocalDebateMode('classic')}
+                                            className={`p-3 rounded-xl border text-sm font-medium transition-all ${localDebateMode === 'classic' ? 'bg-black text-white dark:bg-white dark:text-black border-black dark:border-white' : 'bg-zinc-50 dark:bg-zinc-800 border-zinc-200 dark:border-zinc-700'}`}
+                                        >
+                                            Classic (Pro/Con)
+                                        </button>
+                                        <button
+                                            onClick={() => setLocalDebateMode('custom')}
+                                            className={`p-3 rounded-xl border text-sm font-medium transition-all ${localDebateMode === 'custom' ? 'bg-black text-white dark:bg-white dark:text-black border-black dark:border-white' : 'bg-zinc-50 dark:bg-zinc-800 border-zinc-200 dark:border-zinc-700'}`}
+                                        >
+                                            Custom (Rounds)
+                                        </button>
+                                    </div>
+                                    {localDebateMode === 'custom' && (
+                                        <div className="mt-3 animate-in fade-in slide-in-from-top-1">
+                                            <label className="text-xs text-zinc-500 mb-1 block">Rounds per participant</label>
+                                            <input
+                                                type="number" min="1" max="50"
+                                                className="w-20 p-2 rounded-lg border border-zinc-200 dark:border-zinc-700 bg-zinc-50 dark:bg-zinc-800/50 text-sm"
+                                                value={localMaxRounds}
+                                                onChange={(e) => setLocalMaxRounds(parseInt(e.target.value) || 1)}
+                                            />
+                                        </div>
+                                    )}
                                 </div>
 
                                 <div>

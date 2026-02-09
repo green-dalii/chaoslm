@@ -1,5 +1,3 @@
-import { IRoomState, IAgent } from "@/types";
-
 import { IRoomState, IAgent, ClassicStage } from "@/types";
 
 export interface ScheduleResult {

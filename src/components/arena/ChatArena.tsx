@@ -3,7 +3,7 @@
 import { useEffect, useRef } from "react";
 import { useRoomStore } from "@/hooks/use-room-store";
 import { useConductor } from "@/hooks/use-conductor";
-import { Play, Pause, Mic, User, Bot, MessageSquare, List, Trash2, BrainCircuit, RotateCcw, AlertTriangle } from "lucide-react";
+import { Play, Pause, Mic, User, Bot, MessageSquare, List, Trash2, BrainCircuit, RotateCcw, AlertTriangle, AlertCircle } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import { useRouter } from "next/navigation";
 
@@ -50,12 +50,12 @@ const renderMessageContent = (text: string) => {
 };
 
 export function ChatArena() {
-    const { agents, history, status, setStatus, currentTurn, userRole, topic, name, resetRoom } = useRoomStore();
+    const { agents, history, status, setStatus, currentTurn, userRole, topic, name, resetRoom, debateMode, currentRound, maxRounds, currentStage } = useRoomStore();
     const router = useRouter(); // Import at top
     const messagesEndRef = useRef<HTMLDivElement>(null);
 
     // Activate the Conductor
-    const { stop, isGenerating, regenerate, endDebate } = useConductor();
+    const { stop, isGenerating, regenerate, endDebate, lastError, restartTurn } = useConductor();
 
     // Auto-scroll
     useEffect(() => {
@@ -131,7 +131,14 @@ export function ChatArena() {
                 <header className="h-16 border-b border-zinc-200 dark:border-zinc-800 flex items-center justify-between px-6 bg-white dark:bg-zinc-900/80 backdrop-blur-md sticky top-0 z-10 shrink-0">
                     <div>
                         <h1 className="font-bold text-lg truncate max-w-[300px]">{topic || "Debate Arena"}</h1>
-                        <p className="text-xs text-zinc-500">{status === 'active' ? 'Live Debate' : 'Paused'}</p>
+                        <div className="flex items-center gap-2 mt-0.5">
+                            <span className="text-[10px] uppercase font-bold px-1.5 py-0.5 rounded bg-zinc-100 dark:bg-zinc-800 text-zinc-500">
+                                {debateMode} mode
+                                {debateMode === 'custom' && ` (${currentRound}/${maxRounds})`}
+                                {debateMode === 'classic' && ` (${currentStage.replace('_', ' ')})`}
+                            </span>
+                            <span className="text-[10px] text-zinc-400 capitalize">• {status}</span>
+                        </div>
                     </div>
 
                     <div className="flex items-center gap-2">
@@ -171,6 +178,22 @@ export function ChatArena() {
                         )}
                     </div>
                 </header>
+
+                {/* Error Banner */}
+                {lastError && (
+                    <div className="px-4 py-2 bg-red-50 dark:bg-red-900/20 border-b border-red-100 dark:border-red-800/30 flex items-center justify-between">
+                        <div className="flex items-center gap-2 text-red-600 dark:text-red-400 text-sm">
+                            <AlertCircle className="w-4 h-4" />
+                            <span>{lastError}</span>
+                        </div>
+                        <button
+                            onClick={restartTurn}
+                            className="text-xs font-bold bg-red-600 text-white px-3 py-1 rounded-lg hover:bg-red-700 transition-colors"
+                        >
+                            Retry Turn
+                        </button>
+                    </div>
+                )}
 
                 {/* Messages */}
                 <div className="flex-1 overflow-y-auto p-4 sm:p-8 space-y-6">

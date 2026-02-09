@@ -1,46 +1,65 @@
-# Fix DeepSeek Reasoning & Add Temperature Control
+# Advanced Debate Modes & Robust Scheduling
 
-The user reports that `deepseek-reasoner` returns blank responses and requested a temperature slider in the setup UI.
+Enhance the debate experience with specialized modes, a signal-based scheduler, and robust error handling.
 
 ## User Review Required
 
 > [!IMPORTANT]
-> `deepseek-reasoner` does not support the `temperature` parameter. I will ensure that if this model is selected, the temperature setting is ignored or set to the provider's default to avoid API errors.
+> **Host Dependency**: The "Classic" and "Custom" modes rely heavily on the AI Host to manage the flow. Ensure the AI Host model is reliable (e.g., GPT-4o or Claude 3.5 Sonnet).
 
 ## Proposed Changes
 
-### LLM Adapters
-#### [MODIFY] [generic-adapter.ts](file:///Users/greener/project/chaoslm/src/lib/llm-adapters/generic-adapter.ts)
-- Add `temperature` parameter to `chatStream`.
-- Ensure `temperature` is passed to the OpenAI client.
+### Core Types & State
+#### [MODIFY] [types/index.ts](file:///Users/greener/project/chaoslm/src/types/index.ts)
+- Add `DebateMode`: `standard`, `classic`, `custom`.
+- Add `IRoomState` fields: `debateMode`, `maxRounds`, `currentRound`, `currentStage`, `isEnding`.
 
-### Conductor Logic
+#### [MODIFY] [use-room-store.ts](file:///Users/greener/project/chaoslm/src/hooks/use-room-store.ts)
+- Add actions for setting the mode and round configuration.
+- Implement state updates for tracking rounds and stages.
+
+---
+
+### Centralized Scheduler
+#### [MODIFY] [scheduler.ts](file:///Users/greener/project/chaoslm/src/lib/conductor/scheduler.ts)
+- Implement `getScheduleInstruction(state: IRoomState)`:
+    - Returns `{ targetId, instruction, nextStage? }`.
+    - **Standard**: Circular participant loop.
+    - **Classic**: Sequence of `introduction` -> `opening` -> `rebuttal` -> `free` -> `conclusion`.
+    - **Custom**: Stops after `maxRounds` is reached.
+- The instruction will be formatted as a System message to guide the Moderator.
+
+---
+
+### Conductor Integration
 #### [MODIFY] [use-conductor.ts](file:///Users/greener/project/chaoslm/src/hooks/use-conductor.ts)
-- Strip `<think>...</think>` tags from conversation history before sending to DeepSeek Reasoner models to prevent context pollution and follow official guidance.
-- Extract `temperature` from the `currentAgent` config.
-- Pass `temperature` in the payload to `/api/chat`.
-- Add a special check: If `modelId` is `deepseek-reasoner`, do not send `temperature`.
+- Implement **Signal-Based Flow**:
+    1. Scheduler emits instruction.
+    2. Conductor posts System message.
+    3. Moderator (AI Host) responds to the System message.
+    4. Target participant responds to the Moderator.
+- Implement **Failure Handling**:
+    - Max 3 retries for model errors.
+    - Pause and notify user with a "Friendly Error" on persistent failure.
+- Fix **End Debate**:
+    - Distinct button logic.
+    - `stop()` all streams -> Set `isEnding: true` -> Trigger Moderator summary.
 
-### Git Workflow
-- **MANDATORY**: Commit changes after each successful fix.
+---
 
-### API Routes
-#### [MODIFY] [route.ts](file:///Users/greener/project/chaoslm/src/app/api/chat/route.ts)
-- Accept `temperature` in the request body.
-- Pass it to the provider's `chatStream`.
+### UI Enhancements
+#### [MODIFY] [SetupScreen.tsx](file:///Users/greener/project/chaoslm/src/components/setup/SetupScreen.tsx)
+- Add "Debate Mode" selector in Step 1.
+- Add "Rounds" input if "Custom" mode is selected.
 
-### Frontend Setup UI
-#### [MODIFY] [page.tsx](file:///Users/greener/project/chaoslm/src/app/setup/page.tsx) (SetupScreen)
-- Add a slider for `temperature` (0.0 to 2.0, default 1.0) in the agent configuration modal/form.
-- Ensure the state is saved to the agent object.
+#### [MODIFY] [ChatArena.tsx](file:///Users/greener/project/chaoslm/src/components/arena/ChatArena.tsx)
+- Add the permanent "End Debate" button.
+- Improve status display (show current round/stage).
 
 ## Verification Plan
 
-### Automated Tests
-- Manual verification via UI.
-- Use `curl` to test `/api/chat` with temperature and `deepseek-reasoner`.
-
 ### Manual Verification
-1. Add an agent with `deepseek-reasoner`.
-2. Start a debate and verify thinking content appears AND the final answer appears.
-3. Check the setup page, adjust temperature for an agent, and verify it persists and is sent in the API request.
+1. **Rounds**: Set rounds to 2 in Custom mode, verify it stops and summarizes.
+2. **Classic**: Verify progression through stages.
+3. **Failure**: Intentionally provide a wrong API key to test the "Restart Speaker" and "Friendly Error" logic.
+4. **End Button**: Click mid-generation and verify immediate stop + summary.
