@@ -19,6 +19,12 @@ interface RoomStore extends IRoomState {
     setStatus: (status: RoomStatus) => void;
     setTurn: (agentId: string | null) => void;
 
+    setDebateMode: (mode: IRoomState['debateMode']) => void;
+    setMaxRounds: (rounds: number) => void;
+    setCurrentRound: (round: number) => void;
+    setCurrentStage: (stage: IRoomState['currentStage']) => void;
+    setIsEnding: (isEnding: boolean) => void;
+
     resetRoom: () => void;
 }
 
@@ -31,6 +37,11 @@ const initialState: IRoomState = {
     history: [],
     status: "idle",
     currentTurn: null,
+    debateMode: "standard",
+    maxRounds: 3,
+    currentRound: 1,
+    currentStage: "introduction",
+    isEnding: false,
 };
 
 export const useRoomStore = create<RoomStore>()(
@@ -73,6 +84,12 @@ export const useRoomStore = create<RoomStore>()(
 
             setStatus: (status) => set({ status }),
             setTurn: (currentTurn) => set({ currentTurn }),
+
+            setDebateMode: (debateMode) => set({ debateMode }),
+            setMaxRounds: (maxRounds) => set({ maxRounds }),
+            setCurrentRound: (currentRound) => set({ currentRound }),
+            setCurrentStage: (currentStage) => set({ currentStage }),
+            setIsEnding: (isEnding) => set({ isEnding }),
 
             resetRoom: () => set(initialState),
         }),

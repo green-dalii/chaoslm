@@ -33,6 +33,8 @@ export interface IMessage {
 }
 
 export type RoomStatus = 'idle' | 'active' | 'paused' | 'completed';
+export type DebateMode = 'standard' | 'classic' | 'custom';
+export type ClassicStage = 'introduction' | 'pro_opening' | 'con_opening' | 'pro_rebuttal' | 'con_rebuttal' | 'free' | 'pro_summary' | 'con_summary' | 'conclusion';
 
 export interface IRoomState {
     id: string;
@@ -43,6 +45,13 @@ export interface IRoomState {
     history: IMessage[];
     status: RoomStatus;
     currentTurn: string | null; // agent.id or 'user' or null
+
+    // NEW: Debate Logic
+    debateMode: DebateMode;
+    maxRounds: number;    // For Custom Mode: total rounds per speaker
+    currentRound: number;
+    currentStage: ClassicStage;
+    isEnding?: boolean;   // Manual override for "End Debate"
 }
 
 export interface IConductorConfig {
