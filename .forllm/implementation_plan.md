@@ -16,9 +16,13 @@ The user reports that `deepseek-reasoner` returns blank responses and requested 
 
 ### Conductor Logic
 #### [MODIFY] [use-conductor.ts](file:///Users/greener/project/chaoslm/src/hooks/use-conductor.ts)
+- Strip `<think>...</think>` tags from conversation history before sending to DeepSeek Reasoner models to prevent context pollution and follow official guidance.
 - Extract `temperature` from the `currentAgent` config.
 - Pass `temperature` in the payload to `/api/chat`.
-- Add a special check: If `modelId` is `deepseek-reasoner`, do not send `temperature` (or send `undefined`).
+- Add a special check: If `modelId` is `deepseek-reasoner`, do not send `temperature`.
+
+### Git Workflow
+- **MANDATORY**: Commit changes after each successful fix.
 
 ### API Routes
 #### [MODIFY] [route.ts](file:///Users/greener/project/chaoslm/src/app/api/chat/route.ts)

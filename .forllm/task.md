@@ -59,8 +59,9 @@
 ## Phase 13: Stability & Advanced Features [CURRENT]
 - [/] Fix API Crash (Switch to Node.js Runtime & Debug Empty Response) <!-- id: 44 -->
 - [x] Implement Thinking Mode (Capture & Display Reasoning) <!-- id: 45 -->
-- [x] Fix DeepSeek Reasoner "Blank" Issue (Handle `reasoning_content` and `temperature`) <!-- id: 48 -->
+- [x] Fix DeepSeek Reasoner "Blank" Issue (Strip think tags) <!-- id: 48 -->
 - [x] Add Temperature Slider to Setup UI <!-- id: 49 -->
+- [x] Implement "End Debate" Button & Moderator Summary <!-- id: 50 -->
 - [ ] Fix Empty Avatar Bug <!-- id: 46 -->
 - [ ] Reinforce Conductor State Logic <!-- id: 47 -->
 

@@ -7,9 +7,9 @@
 ### 🧠 The Conductor Core (`src/lib/conductor`)
 *   **Turn Scheduler**: Round-robin logic ensures fair debate turns (`scheduler.ts`).
 *   **Turn- Added "Stop" button and automatic room activation.
-*  - **DeepSeek Reasoner Fix**: Addressed the blank response issue by ensuring `temperature` is not sent to `deepseek-reasoner` (as per specification) while correctly capturing `reasoning_content`.
-- **Temperature Control**: Added a slider to the `/setup` page for every agent (and the AI Host), allowing users to adjust model creativity (defaulting to 1.0).
-- **Interface Alignment**: Unified the `ILLMProvider` interface across all adapters (Anthropic, Gemini, OpenAI).
+*  - **DeepSeek Reasoner Fix**: Addressed the blank response issue by stripping `<think>` tags from conversation history and correctly handling `reasoning_content`.
+- **End Debate Feature**: Added an "End Debate" button that stops current activity and requests a final summary from the moderator.
+- **Temperature Control**: Added a slider to the `/setup` page for every agent.
 
 ## What was tested
 - Verified streaming visibility in ChatArena.
