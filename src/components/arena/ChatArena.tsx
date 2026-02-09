@@ -55,7 +55,7 @@ export function ChatArena() {
     const messagesEndRef = useRef<HTMLDivElement>(null);
 
     // Activate the Conductor
-    const { stop, isGenerating, regenerate } = useConductor();
+    const { stop, isGenerating, regenerate, endDebate } = useConductor();
 
     // Auto-scroll
     useEffect(() => {
@@ -147,12 +147,27 @@ export function ChatArena() {
                         )}
 
                         {userRole === 'host' && (
-                            <button
-                                onClick={toggleStatus}
-                                className={`flex items-center gap-2 px-3 py-1.5 rounded-full text-sm font-medium transition-colors ${status === 'active' ? 'bg-zinc-100 hover:bg-zinc-200 text-zinc-900' : 'bg-green-600 text-white hover:bg-green-700'}`}
-                            >
-                                {status === 'active' ? <><Pause className="w-4 h-4" /> Pause</> : <><Play className="w-4 h-4" /> IDLE (Start)</>}
-                            </button>
+                            <div className="flex items-center gap-2">
+                                <button
+                                    onClick={toggleStatus}
+                                    className={`flex items-center gap-2 px-3 py-1.5 rounded-full text-sm font-medium transition-colors ${status === 'active' ? 'bg-zinc-100 hover:bg-zinc-200 text-zinc-900' : 'bg-green-600 text-white hover:bg-green-700'}`}
+                                >
+                                    {status === 'active' ? <><Pause className="w-4 h-4" /> Pause</> : <><Play className="w-4 h-4" /> IDLE (Start)</>}
+                                </button>
+
+                                {status === 'active' && (
+                                    <button
+                                        onClick={() => {
+                                            if (confirm("End debate and request moderator summary?")) {
+                                                endDebate();
+                                            }
+                                        }}
+                                        className="flex items-center gap-2 px-3 py-1.5 rounded-full text-sm font-medium bg-zinc-800 hover:bg-black text-white transition-colors"
+                                    >
+                                        End Debate
+                                    </button>
+                                )}
+                            </div>
                         )}
                     </div>
                 </header>
