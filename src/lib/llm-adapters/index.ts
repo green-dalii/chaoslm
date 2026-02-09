@@ -76,7 +76,7 @@ function initProviders() {
             id: "openrouter",
             name: "OpenRouter",
             baseURL: "https://openrouter.ai/api/v1",
-            defaultModels: ["openai/gpt-4o", "anthropic/claude-3.5-sonnet", "google/gemini-pro-1.5"]
+            defaultModels: ["deepseek/deepseek-r1", "anthropic/claude-3.5-sonnet", "openai/gpt-4o", "google/gemini-pro-1.5"]
         }));
 
         availableProviders.push(new GenericOpenAIAdapter({

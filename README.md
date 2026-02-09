@@ -1,36 +1,57 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# ChaosLM: The Multi-Agent Collaboration & Debate Arena
 
-## Getting Started
+ChaosLM is a sophisticated multi-agent simulation platform designed to explore diverse perspectives, collaborative problem-solving, and structured debate through the power of various Large Language Models (LLMs).
 
-First, run the development server:
+![ChaosLM Banner](https://raw.githubusercontent.com/greener-chan/chaoslm/main/public/banner.png) *(Note: Placeholder for actual banner)*
 
+## 🌟 Key Features
+
+- **Multi-Agent Interaction**: Orchestrate complex discussions between multiple AI agents and human participants.
+- **Multi-Provider Support**: Seamlessly integrate with world-leading LLM providers:
+  - **OpenAI** (GPT-4o, GPT-3.5-Turbo)
+  - **Anthropic** (Claude 3.5 Sonnet, Opus)
+  - **Google Gemini** (Gemini 1.5 Pro/Flash)
+  - **DeepSeek** (DeepSeek-V3, DeepSeek-R1 with reasoning support)
+  - **OpenRouter** (Unified access to hundreds of models)
+  - **Local Models** via **Ollama**
+  - **Asian Providers**: Qwen (Alibaba), Kimi (Moonshot), Minimax, Zhipu
+- **Dynamic Debate Modes**:
+  - **Standard (Free)**: Open-ended, multi-perspective discussion loop.
+  - **Classic**: Formal structured debate (Opening -> Rebuttal -> Summary).
+  - **Custom**: Round-limited turns tailored for specific requirements.
+- **Thinking Mode**: Native support for DeepSeek R1 and other "reasoning" models to display the internal chain of thought.
+- **Session Management**: Export and Import your debate history as JSON for analysis or later resumption.
+- **Rich UI/UX**: Modern, responsive interface with real-time token/latency metrics and markdown rendering.
+
+## 🚀 Getting Started
+
+### Prerequisites
+- Node.js 18+
+- API Keys for your preferred providers (stored locally in your browser).
+
+### Installation
 ```bash
-npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
+git clone https://github.com/greener-chan/chaoslm.git
+cd chaoslm
+npm install
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+### Development
+```bash
+npm run dev
+```
+Open [http://localhost:3000](http://localhost:3000) to start your first session.
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+## 🏗️ Architecture
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+- **Frontend**: Next.js 14, React, Tailwind CSS, Lucide Icons.
+- **State Management**: Zustand with persistent middleware.
+- **Conductor Core**: A robust internal engine (The Conductor) that manages turn scheduling, system prompt injection, and LLM orchestration.
+- **Adapter Pattern**: Extensible provider interface for easy integration of new AI models.
 
-## Learn More
+## 📄 License
+MIT
 
-To learn more about Next.js, take a look at the following resources:
-
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
-
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
-
-## Deploy on Vercel
-
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
-
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+## 🌍 Links
+- [Changelog](./.gemini/antigravity/brain/8f53f534-7f9d-4447-82c4-b5907120cfce/changelog.md)
+- [中文文档 (README_zh.md)](./README_zh.md)

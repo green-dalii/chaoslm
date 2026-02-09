@@ -14,7 +14,7 @@ interface RoomStore extends IRoomState {
     removeAgent: (id: string) => void;
 
     addMessage: (message: Omit<IMessage, "id" | "timestamp"> & { id?: string }) => void;
-    updateMessage: (id: string, content: string, isThinking?: boolean) => void;
+    updateMessage: (id: string, content: string, isThinking?: boolean, tokens?: number, duration?: number) => void;
 
     setStatus: (status: RoomStatus) => void;
     setTurn: (agentId: string | null) => void;
@@ -26,6 +26,7 @@ interface RoomStore extends IRoomState {
     setIsEnding: (isEnding: boolean) => void;
 
     resetRoom: () => void;
+    importRoom: (state: IRoomState) => void;
 }
 
 const initialState: IRoomState = {
@@ -75,10 +76,16 @@ export const useRoomStore = create<RoomStore>()(
                     ],
                 })),
 
-            updateMessage: (id, content, isThinking) =>
+            updateMessage: (id, content, isThinking, tokens, duration) =>
                 set((state) => ({
                     history: state.history.map((m) =>
-                        m.id === id ? { ...m, content, isThinking: isThinking ?? m.isThinking } : m
+                        m.id === id ? {
+                            ...m,
+                            content,
+                            isThinking: isThinking ?? m.isThinking,
+                            tokens: tokens ?? m.tokens,
+                            duration: duration ?? m.duration
+                        } : m
                     ),
                 })),
 
@@ -92,6 +99,7 @@ export const useRoomStore = create<RoomStore>()(
             setIsEnding: (isEnding) => set({ isEnding }),
 
             resetRoom: () => set(initialState),
+            importRoom: (newState) => set(newState),
         }),
         {
             name: "chaoslm-room-storage",

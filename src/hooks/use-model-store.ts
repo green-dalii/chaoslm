@@ -33,43 +33,36 @@ export const useModelStore = create<ModelStore>()(
         (set, get) => ({
             providers: defaultProviders,
 
-            setApiKey: (providerId, apiKey) =>
-                set((state) => ({
-                    providers: state.providers.map((p) =>
+            setApiKey: (providerId: string, apiKey: string) =>
+                set((state: ModelStore) => ({
+                    providers: state.providers.map((p: IProviderConfig) =>
                         p.id === providerId ? { ...p, apiKey } : p
                     ),
                 })),
 
-            setBaseURL: (providerId, url) => {
-                // This might require storing baseURL in IProviderConfig if not already present.
-                // Let's assume user might want to override even default ones, or at least for Custom/Ollama.
-                // But IProviderConfig didn't have baseURL field. 
-                // We need to update IProviderConfig type first? 
-                // Or just store it here and pass it when needed.
-                // Actually, GenericOpenAIAdapter takes config in constructor.
-                // But if we want dynamic baseURL from UI, we need to pass it to the API endpoint.
-                // The API endpoint constructs the provider.
-                // Currently `getProvider` returns a static instance.
-                // To support dynamic baseURL, we need to pass it in the API call.
-                return;
-            },
+            setBaseURL: (providerId: string, baseURL: string) =>
+                set((state: ModelStore) => ({
+                    providers: state.providers.map((p: IProviderConfig) =>
+                        p.id === providerId ? { ...p, baseURL } : p
+                    ),
+                })),
 
-            updateModels: (providerId, models) =>
-                set((state) => ({
-                    providers: state.providers.map((p) =>
+            updateModels: (providerId: string, models: string[]) =>
+                set((state: ModelStore) => ({
+                    providers: state.providers.map((p: IProviderConfig) =>
                         p.id === providerId ? { ...p, models } : p
                     ),
                 })),
 
-            toggleProvider: (providerId, enabled) =>
-                set((state) => ({
-                    providers: state.providers.map((p) =>
+            toggleProvider: (providerId: string, enabled: boolean) =>
+                set((state: ModelStore) => ({
+                    providers: state.providers.map((p: IProviderConfig) =>
                         p.id === providerId ? { ...p, enabled } : p
                     ),
                 })),
 
-            getProviderConfig: (providerId) =>
-                get().providers.find(p => p.id === providerId),
+            getProviderConfig: (providerId: string) =>
+                get().providers.find((p: IProviderConfig) => p.id === providerId),
         }),
         {
             name: "chaoslm-model-store",
@@ -81,7 +74,30 @@ export const useModelStore = create<ModelStore>()(
                 // Zustand persist is simple JSON dump.
                 // Strategy: We persist everything for now. User can "Reset" if needed.
                 providers: state.providers
-            })
+            }),
+            merge: (persistedState: any, currentState: any) => {
+                if (!persistedState || !persistedState.providers) return currentState;
+
+                // Merge providers: keep default ones, overwrite with persisted ones if they exist
+                const mergedProviders = [...currentState.providers];
+                persistedState.providers.forEach((persisted: any) => {
+                    const idx = mergedProviders.findIndex(p => p.id === persisted.id);
+                    if (idx !== -1) {
+                        // Update existing default with persisted data (keys, models, etc.)
+                        mergedProviders[idx] = { ...mergedProviders[idx], ...persisted };
+                    } else {
+                        // If it's a "custom" provider added by user (not in current defaults), keep it?
+                        // Actually our defaults include 'custom'.
+                        mergedProviders.push(persisted);
+                    }
+                });
+
+                return {
+                    ...currentState,
+                    ...persistedState,
+                    providers: mergedProviders
+                };
+            }
         }
     )
 );

@@ -52,7 +52,35 @@ export function useConductor() {
         const targetId = agentId || state.currentTurn;
         if (!targetId || isProcessing.current) return;
 
-        const currentAgent = state.agents.find((a) => a.id === targetId);
+        // Special case: System Bootstrap
+        let currentAgent = state.agents.find((a) => a.id === targetId);
+
+        // If target is 'system', we use the Moderator's model or a default to generate context
+        if (targetId === 'system') {
+            const moderator = state.agents.find(a => a.role === 'host');
+
+            // Define Mode Rules
+            const modeRules: Record<IRoomState['debateMode'], string> = {
+                standard: "STANDARD MODE: This is an open-ended, multi-perspective discussion. There are no fixed 'Pro' or 'Con' sides. Participants should explore the topic from diverse, divergent, and creative angles, prioritizing breadth and depth of thought over winning an argument.",
+                classic: "CLASSIC MODE: Formal debate structure with assigned stances (Pro/Con). Sequence: Introduction -> Opening -> Rebuttal -> Free Debate -> Summary -> Conclusion.",
+                custom: `CUSTOM MODE: Round-limited debate with assigned stances. Each participant gets ${state.maxRounds} rounds of speaking time.`
+            };
+
+            if (moderator) {
+                currentAgent = {
+                    ...moderator,
+                    id: 'system',
+                    name: 'System',
+                    systemPrompt: `You are the debate system. Generate a clear, structured background and ruleset for the topic: "${state.topic}". 
+Rules of the current mode: ${modeRules[state.debateMode]}
+Format your output as a professional briefing document.`
+                };
+            } else {
+                advanceTurn();
+                return;
+            }
+        }
+
         if (!currentAgent) return;
 
         isProcessing.current = true;
@@ -63,35 +91,49 @@ export function useConductor() {
         const messageId = uuidv4();
         addMessage({
             id: messageId,
-            role: "assistant",
-            senderId: currentAgent.id,
+            role: targetId === 'system' ? 'system' : "assistant",
+            senderId: targetId,
             content: "",
             isThinking: true,
         });
 
-        // Prepare context: filter non-system, apply deepseek strip
+        const startTime = performance.now();
+
+        // Prepare context: filter non-system, apply deepseek strip, and map roles perspectively
         const historyContext = state.history
-            .filter(m => m.senderId !== 'system' || m.content.startsWith('[SIGNAL]')) // Keep signals?
+            .filter(m => m.senderId !== 'system' || m.content.startsWith('[SIGNAL]'))
             .map(m => {
                 const sender = state.agents.find(a => a.id === m.senderId);
                 const name = sender ? sender.name : (m.senderId === 'user' ? 'User' : (m.senderId === 'system' ? 'System' : 'Unknown'));
 
                 let content = m.content;
-                if (currentAgent.modelId === "deepseek-reasoner") {
-                    content = content.replace(/<think>[\s\S]*?<\/think>/g, "").trim();
+                // DeepSeek Reasoner: MUST strip thinking content from history to avoid 400
+                if (currentAgent!.modelId === "deepseek-reasoner") {
+                    content = content.replace(/<think>[\s\S]*?(?:<\/think>|$)/g, "").trim();
                 }
 
-                let role: "user" | "assistant" | "system" = "assistant";
-                if (m.senderId === 'user') role = "user";
-                else if (m.senderId === 'system') role = "system";
+                // ROLE MAPPING PERSPECTIVE:
+                // Only the messages from 'targetId' are 'assistant'
+                // Signals are 'system'
+                // Everything else is 'user'
+                let role: "user" | "assistant" | "system" = "user";
+                if (m.senderId === 'system') role = "system";
+                else if (m.senderId === targetId) role = "assistant";
+                else role = "user";
 
                 return { role, content: `[${name}]: ${content}` };
             });
 
         const providerConfig = useModelStore.getState().getProviderConfig(currentAgent.providerId);
+
+        // Find if there's a System Bootstrap message in history to inject
+        const bootstrapMsg = state.history.find(m => m.senderId === 'system' && !m.content.startsWith('['));
+        const bootstrapContent = bootstrapMsg ? `\n[DEBATE BACKGROUND]\n${bootstrapMsg.content}\n` : "";
+
         const enhancedSystemPrompt = `
 [DEBATE CONTEXT]
 Topic: "${state.topic || "General Discussion"}"
+${bootstrapContent}
 Mode: ${state.debateMode}
 Current Phase: ${state.currentStage}
 Round: ${state.currentRound}
@@ -148,17 +190,36 @@ ${overridePrompt || "Continue the debate naturally based on history."}
                     if (line.trim().startsWith("data: ")) {
                         try {
                             const data = JSON.parse(line.trim().slice(6));
-                            if (data.isThinking && data.content) {
-                                thinkingAccumulator += data.content;
+                            const chunkContent = data.content || "";
+
+                            if (data.isThinking) {
+                                thinkingAccumulator += chunkContent;
                                 updateMessage(messageId, `<think>${thinkingAccumulator}</think>\n` + contentAccumulator, true);
-                            } else if (data.content) {
-                                contentAccumulator += data.content;
+                            } else if (chunkContent || data.content === "") {
+                                // data.content === "" is sometimes sent as an "end of block" signal
+                                contentAccumulator += chunkContent;
                                 updateMessage(messageId, (thinkingAccumulator ? `<think>${thinkingAccumulator}</think>\n` : "") + contentAccumulator, false);
                             }
                         } catch (e) { }
                     }
                 }
             }
+
+            const endTime = performance.now();
+            const duration = endTime - startTime;
+            const estimatedTokens = Math.ceil((thinkingAccumulator.length + contentAccumulator.length) / 4);
+
+            const finalContent = (thinkingAccumulator ? `<think>${thinkingAccumulator}</think>\n` : "") + contentAccumulator;
+
+            // SCHEDULER HARDENING: Detection of "Stuck" agent
+            // If content is empty (and it's not the initial bootstrap which might be slow but usually has content)
+            // Or if it's just a repetition of thinking without content.
+            if (targetId !== 'system' && !contentAccumulator.trim()) {
+                throw new Error("Agent generated empty content. Possible API failure or model loop.");
+            }
+
+            updateMessage(messageId, finalContent, false, estimatedTokens, duration);
+
             success = true;
             retryCount.current = 0;
         } catch (error: any) {
@@ -251,13 +312,24 @@ ${overridePrompt || "Continue the debate naturally based on history."}
         setTimeout(() => {
             const state = useRoomStore.getState();
             const schedule = getSchedule(state);
+
+            // Log for debugging
+            console.log("[CONDUCTOR] Manual End requested. Schedule:", schedule);
+
             addMessage({
                 role: 'system',
                 senderId: 'system',
                 content: schedule.instruction
             });
+
             setTurn(schedule.nextTurn);
             setStatus('active');
+
+            // Force run the final turn manually because the effect might not trigger 
+            // if we were already in the moderator's turn (or already active)
+            if (schedule.nextTurn && schedule.nextTurn !== 'user') {
+                runTurn(schedule.nextTurn);
+            }
         }, 100);
     };
 

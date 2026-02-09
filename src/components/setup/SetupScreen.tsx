@@ -24,16 +24,18 @@ export function SetupScreen() {
     const { providers } = useModelStore();
 
     // Host Config (if user is not host)
-    const [hostProviderId, setHostProviderId] = useState("openai");
+    const [hostProviderId, setHostProviderId] = useState(""); // Default to empty
     const [hostModelId, setHostModelId] = useState("");
     const [hostTemperature, setHostTemperature] = useState(1.0);
+    const [showHostAdvanced, setShowHostAdvanced] = useState(false);
 
     // Agent Form
     const [newAgentName, setNewAgentName] = useState("");
-    const [systemPrompt, setSystemPrompt] = useState("");
-    const [selectedProvider, setSelectedProvider] = useState("openai");
+    const [selectedStance, setSelectedStance] = useState<'pro' | 'con' | 'neutral'>('neutral');
+    const [selectedProvider, setSelectedProvider] = useState(""); // Default to empty
     const [selectedModel, setSelectedModel] = useState("");
     const [localTemperature, setLocalTemperature] = useState(1.0);
+    const [showAgentAdvanced, setShowAgentAdvanced] = useState(false);
 
     // Helper to get models for a provider
     const getModelsFor = (pid: string) => providers.find(p => p.id === pid)?.models || [];
@@ -81,29 +83,39 @@ export function SetupScreen() {
     };
 
     const handleAddAgent = () => {
-        if (!newAgentName.trim()) return;
+        // Validation: Must select a model
         if (!selectedModel) {
             alert("Please select a model for the agent.");
             return;
         }
 
+        // If name is empty, use model name
+        const finalName = newAgentName.trim() || selectedModel;
+
+        let autoPrompt = "";
+        if (localDebateMode === 'standard') {
+            autoPrompt = `You are ${finalName}, participating in an open, multi-perspective discussion on "${localTopic}". Provide diverse, creative, and divergent viewpoints. Do not feel restricted to a single side.`;
+        } else {
+            const stanceMap = { pro: "Affirmative (Pro)", con: "Opposition (Con)", neutral: "Neutral/Balanced" };
+            autoPrompt = `You are ${finalName}, participating in a debate on "${localTopic}". Your assigned stance is: ${stanceMap[selectedStance]}. Always stay in character and argue from this perspective.`;
+        }
+
         const newAgent: IAgent = {
             id: uuidv4(),
-            name: newAgentName,
-            avatar: `https://api.dicebear.com/7.x/bottts/svg?seed=${newAgentName}`,
+            name: finalName,
+            avatar: `https://api.dicebear.com/7.x/bottts/svg?seed=${finalName}`,
             providerId: selectedProvider,
             modelId: selectedModel,
-            systemPrompt: systemPrompt || "You are a helpful assistant participating in a debate.",
+            systemPrompt: autoPrompt,
             role: 'assistant',
             temperature: localTemperature,
-            color: `hsl(${Math.random() * 360}, 70%, 50%)`
+            color: `hsl(${Math.random() * 360}, 70%, 50%)`,
+            stance: localDebateMode === 'standard' ? undefined : selectedStance
         };
 
         addAgent(newAgent);
         setNewAgentName("");
-        setSystemPrompt("");
-        // Keep provider/model selection for convenience? Or reset?
-        // Let's keep it.
+        setSelectedStance("neutral");
     };
 
     // Filter only enabled providers (or those with models) for selection
@@ -166,6 +178,22 @@ export function SetupScreen() {
                                             Custom (Rounds)
                                         </button>
                                     </div>
+
+                                    {/* Mode Description Card */}
+                                    <div className="mt-3 p-3 bg-zinc-100 dark:bg-zinc-800/50 rounded-xl border border-zinc-200 dark:border-zinc-700/50 animate-in fade-in slide-in-from-top-1">
+                                        <div className="flex items-center gap-2 mb-1 text-zinc-900 dark:text-zinc-100 font-semibold text-xs uppercase tracking-wider">
+                                            <AlertCircle className="w-3 h-3 text-blue-500" />
+                                            {localDebateMode === 'standard' && "Standard Mode"}
+                                            {localDebateMode === 'classic' && "Classic Mode"}
+                                            {localDebateMode === 'custom' && "Custom Mode"}
+                                        </div>
+                                        <p className="text-xs text-zinc-500 dark:text-zinc-400 leading-relaxed italic">
+                                            {localDebateMode === 'standard' && "Free-flowing discussion with no strict stages. Participants take turns naturally until ended manually."}
+                                            {localDebateMode === 'classic' && "Formal structure: Intro → Opening → Rebuttal → Free Debate → Summary → Verdict. The most professional way to resolve conflicts."}
+                                            {localDebateMode === 'custom' && `Each participant gets exactly ${localMaxRounds} rounds to speak. Fair and controlled turns.`}
+                                        </p>
+                                    </div>
+
                                     {localDebateMode === 'custom' && (
                                         <div className="mt-3 animate-in fade-in slide-in-from-top-1">
                                             <label className="text-xs text-zinc-500 mb-1 block">Rounds per participant</label>
@@ -244,6 +272,7 @@ export function SetupScreen() {
                                                     setHostModelId(""); // Reset model when provider changes
                                                 }}
                                             >
+                                                <option value="" disabled>Provider</option>
                                                 {activeProviders.map(p => <option key={p.id} value={p.id}>{p.name}</option>)}
                                             </select>
                                             <select
@@ -258,17 +287,28 @@ export function SetupScreen() {
                                             </select>
                                         </div>
 
-                                        <div className="mt-4">
-                                            <div className="flex justify-between items-center mb-1">
-                                                <label className="text-xs font-medium text-amber-800 dark:text-amber-400">Temperature</label>
-                                                <span className="text-xs font-mono text-amber-600">{hostTemperature.toFixed(1)}</span>
-                                            </div>
-                                            <input
-                                                type="range" min="0" max="2" step="0.1"
-                                                className="w-full h-1.5 bg-amber-200 dark:bg-amber-800 rounded-lg appearance-none cursor-pointer accent-amber-600"
-                                                value={hostTemperature}
-                                                onChange={(e) => setHostTemperature(parseFloat(e.target.value))}
-                                            />
+                                        <div className="mt-3">
+                                            <button
+                                                onClick={() => setShowHostAdvanced(!showHostAdvanced)}
+                                                className="text-[10px] font-bold text-amber-700 dark:text-amber-500 uppercase tracking-widest flex items-center gap-1 hover:opacity-70"
+                                            >
+                                                {showHostAdvanced ? "Hide Advanced" : "Show Advanced Settings (Temp)"}
+                                            </button>
+
+                                            {showHostAdvanced && (
+                                                <div className="mt-2 animate-in fade-in slide-in-from-top-1">
+                                                    <div className="flex justify-between items-center mb-1">
+                                                        <label className="text-xs font-medium text-amber-800 dark:text-amber-400">Temperature</label>
+                                                        <span className="text-xs font-mono text-amber-600">{hostTemperature.toFixed(1)}</span>
+                                                    </div>
+                                                    <input
+                                                        type="range" min="0" max="2" step="0.1"
+                                                        className="w-full h-1.5 bg-amber-200 dark:bg-amber-800 rounded-lg appearance-none cursor-pointer accent-amber-600"
+                                                        value={hostTemperature}
+                                                        onChange={(e) => setHostTemperature(parseFloat(e.target.value))}
+                                                    />
+                                                </div>
+                                            )}
                                         </div>
 
                                         {getModelsFor(hostProviderId).length === 0 && (
@@ -282,15 +322,7 @@ export function SetupScreen() {
                                 {/* Add Agent Form */}
                                 <div className="space-y-4">
                                     <h3 className="font-semibold text-sm">Add Debator Agent</h3>
-                                    <div className="grid grid-cols-2 gap-4">
-                                        <div>
-                                            <input
-                                                className="w-full p-2.5 rounded-lg border border-zinc-200 dark:border-zinc-700 bg-zinc-50 dark:bg-zinc-800/50 text-sm"
-                                                placeholder="Name (e.g. Socrates)"
-                                                value={newAgentName}
-                                                onChange={(e) => setNewAgentName(e.target.value)}
-                                            />
-                                        </div>
+                                    <div className="space-y-3">
                                         <div className="flex gap-2">
                                             <select
                                                 className="w-1/3 p-2.5 rounded-lg border border-zinc-200 dark:border-zinc-700 bg-zinc-50 dark:bg-zinc-800/50 text-sm"
@@ -300,6 +332,7 @@ export function SetupScreen() {
                                                     setSelectedModel("");
                                                 }}
                                             >
+                                                <option value="" disabled>Provider</option>
                                                 {activeProviders.map(p => <option key={p.id} value={p.id}>{p.name}</option>)}
                                             </select>
                                             <select
@@ -313,35 +346,64 @@ export function SetupScreen() {
                                                 ))}
                                             </select>
                                         </div>
+                                        <input
+                                            className="w-full p-2.5 rounded-lg border border-zinc-200 dark:border-zinc-700 bg-zinc-50 dark:bg-zinc-800/50 text-sm font-medium"
+                                            placeholder="Display Name (Optional, defaults to model)"
+                                            value={newAgentName}
+                                            onChange={(e) => setNewAgentName(e.target.value)}
+                                        />
                                     </div>
 
-                                    <textarea
-                                        className="w-full p-2.5 rounded-lg border border-zinc-200 dark:border-zinc-700 bg-zinc-50 dark:bg-zinc-800/50 min-h-[80px] text-sm resize-none"
-                                        placeholder="System Prompt / Persona Description..."
-                                        value={systemPrompt}
-                                        onChange={(e) => setSystemPrompt(e.target.value)}
-                                    />
-
-                                    <div className="p-3 bg-zinc-50 dark:bg-zinc-800/30 rounded-xl border border-zinc-200 dark:border-zinc-700/50">
-                                        <div className="flex justify-between items-center mb-2">
-                                            <label className="text-xs font-semibold text-zinc-500">Model Temperature</label>
-                                            <span className="text-xs font-mono font-bold text-blue-500">{localTemperature.toFixed(1)}</span>
+                                    {localDebateMode !== 'standard' && (
+                                        <div className="animate-in fade-in slide-in-from-top-1">
+                                            <label className="text-xs text-zinc-500 mb-2 block uppercase tracking-wider font-bold">Select Stance</label>
+                                            <div className="flex gap-2">
+                                                {(['pro', 'con', 'neutral'] as const).map(stance => (
+                                                    <button
+                                                        key={stance}
+                                                        onClick={() => setSelectedStance(stance)}
+                                                        className={`flex-1 py-2 text-xs font-bold rounded-lg border transition-all ${selectedStance === stance
+                                                            ? 'bg-black text-white dark:bg-white dark:text-black border-black dark:border-white'
+                                                            : 'bg-zinc-50 dark:bg-zinc-800 border-zinc-200 dark:border-zinc-700 text-zinc-500'}`}
+                                                    >
+                                                        {stance.toUpperCase()}
+                                                    </button>
+                                                ))}
+                                            </div>
                                         </div>
-                                        <input
-                                            type="range" min="0" max="2" step="0.1"
-                                            className="w-full h-2 bg-zinc-200 dark:bg-zinc-700 rounded-lg appearance-none cursor-pointer accent-blue-600"
-                                            value={localTemperature}
-                                            onChange={(e) => setLocalTemperature(parseFloat(e.target.value))}
-                                        />
-                                        <p className="text-[10px] text-zinc-400 mt-1.5">Lower = focused & deterministic. Higher = creative & random.</p>
+                                    )}
+
+                                    <div className="pt-2">
+                                        <button
+                                            onClick={() => setShowAgentAdvanced(!showAgentAdvanced)}
+                                            className="text-[10px] font-bold text-zinc-400 dark:text-zinc-500 uppercase tracking-widest flex items-center gap-1 hover:opacity-70"
+                                        >
+                                            {showAgentAdvanced ? "Hide Advanced" : "Advanced Settings (Temp)"}
+                                        </button>
+
+                                        {showAgentAdvanced && (
+                                            <div className="mt-3 p-3 bg-zinc-50 dark:bg-zinc-800/30 rounded-xl border border-zinc-200 dark:border-zinc-700/50 animate-in fade-in slide-in-from-top-1">
+                                                <div className="flex justify-between items-center mb-2">
+                                                    <label className="text-xs font-semibold text-zinc-500">Model Temperature</label>
+                                                    <span className="text-xs font-mono font-bold text-blue-500">{localTemperature.toFixed(1)}</span>
+                                                </div>
+                                                <input
+                                                    type="range" min="0" max="2" step="0.1"
+                                                    className="w-full h-2 bg-zinc-200 dark:bg-zinc-700 rounded-lg appearance-none cursor-pointer accent-blue-600"
+                                                    value={localTemperature}
+                                                    onChange={(e) => setLocalTemperature(parseFloat(e.target.value))}
+                                                />
+                                                <p className="text-[10px] text-zinc-400 mt-1.5">Lower = focused & deterministic. Higher = creative & random.</p>
+                                            </div>
+                                        )}
                                     </div>
 
                                     <button
                                         onClick={handleAddAgent}
-                                        disabled={!newAgentName.trim() || !selectedModel}
-                                        className="w-full py-2.5 rounded-lg bg-zinc-900 dark:bg-zinc-100 text-white dark:text-black font-medium text-sm flex items-center justify-center gap-2 hover:opacity-90 disabled:opacity-50 disabled:cursor-not-allowed"
+                                        disabled={!selectedModel}
+                                        className="w-full py-2.5 rounded-xl bg-black dark:bg-white text-white dark:text-black font-bold text-sm flex items-center justify-center gap-2 hover:opacity-90 disabled:opacity-30 transition-all border border-transparent shadow-md"
                                     >
-                                        <Plus className="w-4 h-4" /> Add Agent
+                                        <Plus className="w-4 h-4" /> Add Member
                                     </button>
                                 </div>
 
@@ -354,6 +416,7 @@ export function SetupScreen() {
                                                 <div className="flex items-center gap-2">
                                                     <span className="font-semibold text-sm">{agent.name}</span>
                                                     <span className="text-[10px] uppercase tracking-wider bg-zinc-100 dark:bg-zinc-700 px-1.5 py-0.5 rounded text-zinc-500">{agent.role}</span>
+                                                    {agent.stance && <span className={`text-[10px] uppercase tracking-wider px-1.5 py-0.5 rounded font-bold ${agent.stance === 'pro' ? 'bg-green-100 text-green-700' : agent.stance === 'con' ? 'bg-red-100 text-red-700' : 'bg-blue-100 text-blue-700'}`}>{agent.stance}</span>}
                                                 </div>
                                                 <p className="text-xs text-zinc-500 truncate">{agent.modelId} ({agent.providerId})</p>
                                             </div>
@@ -372,7 +435,7 @@ export function SetupScreen() {
                                         }
                                         className="flex-1 bg-gradient-to-r from-blue-600 to-indigo-600 text-white py-3 rounded-xl font-bold hover:shadow-lg hover:from-blue-700 hover:to-indigo-700 disabled:opacity-50 disabled:cursor-not-allowed transition-all transform active:scale-[0.98]"
                                     >
-                                        Start Debate
+                                        开始讨论
                                     </button>
                                 </div>
                             </div>

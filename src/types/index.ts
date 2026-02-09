@@ -20,6 +20,7 @@ export interface IAgent {
     role: 'assistant' | 'host'; // NEW: specific agent role
     temperature: number;
     color?: string; // UI color for the agent
+    stance?: 'pro' | 'con' | 'neutral'; // NEW: for structured debates
 }
 
 export interface IMessage {
@@ -30,6 +31,7 @@ export interface IMessage {
     timestamp: number;
     isThinking?: boolean; // True if the content is partially streamed reasoning
     tokens?: number;
+    duration?: number; // ms
 }
 
 export type RoomStatus = 'idle' | 'active' | 'paused' | 'completed';

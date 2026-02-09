@@ -1,4 +1,5 @@
-import { IRoomState, IAgent, ClassicStage } from "@/types";
+import { IRoomState, IAgent, ClassicStage, Role } from "@/types";
+import { v4 as uuidv4 } from "uuid";
 
 export interface ScheduleResult {
     nextTurn: string | null;
@@ -12,8 +13,23 @@ export function getSchedule(state: IRoomState): ScheduleResult {
     const moderator = agents.find(a => a.role === 'host');
     const participants = agents.filter(a => a.role !== 'host');
 
-    // 0. Manual Termination
+    // 0. Start of Debate: Always System Bootstrap
+    if (state.history.length === 0 || (!currentTurn && status === 'idle')) {
+        return {
+            nextTurn: 'system', // Conductor will handle generating background
+            instruction: `[SYSTEM]: Initiating debate bootstrap for topic: "${state.topic}". System, please generate a comprehensive debate context and background rules.`,
+            nextStage: 'introduction' // We use intro as the target after bootstrap
+        };
+    }
+
+    // 0.1 Manual Termination
     if (isEnding) {
+        if (currentTurn === moderator?.id && state.history.some(m => m.senderId === moderator.id && !m.isThinking)) {
+            return {
+                nextTurn: null,
+                instruction: "[SYSTEM]: Debate concluded after manual termination."
+            };
+        }
         return {
             nextTurn: moderator?.id || 'user',
             instruction: "[SYSTEM]: The debate has been manually ended. Moderator, please provide a final concluding summary."
@@ -29,15 +45,34 @@ export function getSchedule(state: IRoomState): ScheduleResult {
         const roster = participants.map(p => p.id);
         if (state.userRole !== 'observer') roster.push('user');
 
+        // Transition from System Bootstrap -> Moderator Intro
+        const lastMessage = state.history[state.history.length - 1];
+        if (lastMessage?.senderId === 'system' && !lastMessage.content.startsWith('[')) {
+            // After system bootstrap context is generated, moderator must introduce
+            return {
+                nextTurn: moderator?.id || roster[0],
+                instruction: `[SYSTEM]: Context generated. Moderator, please introduce the topic and welcome the participants.`
+            };
+        }
+
+        // If current turn is moderator and we just started, first participant is next
         if (!currentTurn || currentTurn === moderator?.id) {
-            return { nextTurn: roster[0], instruction: `[SYSTEM]: Opening floor. ${roster[0]} is speaking next.` };
+            const nextId = roster[0];
+            const firstName = agents.find(a => a.id === nextId)?.name || nextId;
+            return { nextTurn: nextId, instruction: `[SYSTEM]: Opening floor. ${firstName} is speaking next.` };
         }
 
         const currentIndex = roster.indexOf(currentTurn);
+        if (currentIndex === -1) {
+            // Fallback for weird edge cases
+            return { nextTurn: roster[0], instruction: `[SYSTEM]: Resuming discussion. ${agents.find(a => a.id === roster[0])?.name} is up.` };
+        }
+
         const nextIndex = (currentIndex + 1) % roster.length;
         const nextId = roster[nextIndex];
+        const nextName = agents.find(a => a.id === nextId)?.name || nextId;
 
-        return { nextTurn: nextId, instruction: `[SYSTEM]: Next speaker: ${nextId}.` };
+        return { nextTurn: nextId, instruction: `[SYSTEM]: Next speaker: ${nextName}.` };
     }
 
     // 2. Custom Mode: Round Limited
@@ -56,20 +91,23 @@ export function getSchedule(state: IRoomState): ScheduleResult {
                     instruction: `[SYSTEM]: Max rounds reached. Moderator, please summarize and conclude.`,
                 };
             }
+            const nextName = agents.find(a => a.id === roster[0])?.name || roster[0];
             return {
                 nextTurn: roster[0],
-                instruction: `[SYSTEM]: Round ${currentRound + 1} starts. ${roster[0]} is up.`,
+                instruction: `[SYSTEM]: Round ${currentRound + 1} starts. ${nextName} is up.`,
                 nextRound: currentRound + 1
             };
         }
 
-        return { nextTurn: roster[currentIndex + 1], instruction: `[SYSTEM]: Round ${currentRound}: next is ${roster[currentIndex + 1]}.` };
+        const nextId = roster[currentIndex + 1];
+        const nextName = agents.find(a => a.id === nextId)?.name || nextId;
+        return { nextTurn: nextId, instruction: `[SYSTEM]: Round ${currentRound}: next is ${nextName}.` };
     }
 
     // 3. Classic Mode: Stage Driven
     // Stages: introduction -> pro_opening -> con_opening -> pro_rebuttal -> con_rebuttal -> free -> pro_summary -> con_summary -> conclusion
-    const pro = participants[0];
-    const con = participants[1] || pro; // Fallback if only 1 agent
+    const pro = agents.find(a => a.stance === 'pro') || participants[0];
+    const con = agents.find(a => a.stance === 'con') || participants[1] || pro;
 
     const stageSequence: ClassicStage[] = [
         'introduction', 'pro_opening', 'con_opening', 'pro_rebuttal',
@@ -102,6 +140,8 @@ export function getSchedule(state: IRoomState): ScheduleResult {
     };
 
     const targetId = getTargetForStage(nextStage);
+    const targetName = agents.find(a => a.id === targetId)?.name || (targetId === 'host' ? 'Moderator' : 'Unknown');
+
     const stageLabels: Record<ClassicStage, string> = {
         introduction: "Opening and Introduction",
         pro_opening: "Pro Affirmative Opening Statement",
@@ -116,7 +156,7 @@ export function getSchedule(state: IRoomState): ScheduleResult {
 
     return {
         nextTurn: targetId,
-        instruction: `[SYSTEM]: Phase [${stageLabels[nextStage]}]. Next turn: ${targetId || 'Moderator'}.`,
+        instruction: `[SYSTEM]: Phase [${stageLabels[nextStage]}]. Next turn: ${targetName}.`,
         nextStage: nextStage
     };
 }
