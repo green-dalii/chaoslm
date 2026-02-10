@@ -14,10 +14,10 @@ export class AnthropicAdapter implements ILLMProvider {
         // So we return a curated list.
 
         return [
-            { id: "claude-3-5-sonnet-20240620", name: "Claude 3.5 Sonnet", provider: "anthropic", contextWindow: 200000 },
+            { id: "claude-4-6-opus-20260205", name: "Claude 4.6 Opus", provider: "anthropic", contextWindow: 1000000 },
+            { id: "claude-4-5-sonnet-20251119", name: "Claude 4.5 Sonnet", provider: "anthropic", contextWindow: 800000 },
+            { id: "claude-3-5-sonnet-20241022", name: "Claude 3.5 Sonnet", provider: "anthropic", contextWindow: 200000 },
             { id: "claude-3-opus-20240229", name: "Claude 3 Opus", provider: "anthropic", contextWindow: 200000 },
-            { id: "claude-3-sonnet-20240229", name: "Claude 3 Sonnet", provider: "anthropic", contextWindow: 200000 },
-            { id: "claude-3-haiku-20240307", name: "Claude 3 Haiku", provider: "anthropic", contextWindow: 200000 },
         ];
     }
 

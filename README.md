@@ -8,13 +8,13 @@ ChaosLM is a sophisticated multi-agent simulation platform designed to explore d
 
 - **Multi-Agent Interaction**: Orchestrate complex discussions between multiple AI agents and human participants.
 - **Multi-Provider Support**: Seamlessly integrate with world-leading LLM providers:
-  - **OpenAI** (GPT-4o, GPT-3.5-Turbo)
-  - **Anthropic** (Claude 3.5 Sonnet, Opus)
-  - **Google Gemini** (Gemini 1.5 Pro/Flash)
-  - **DeepSeek** (DeepSeek-V3, DeepSeek-R1 with reasoning support)
+  - **OpenAI** (GPT-5.3 Codex, GPT-5.2 Thinking, o1)
+  - **Anthropic** (Claude 4.6 Opus, Claude 3.5 Sonnet)
+  - **Google Gemini** (Gemini 3 Pro/Flash, Gemini 2.5)
+  - **DeepSeek** (DeepSeek-V4/V3, DeepSeek-R1 reasoning support)
   - **OpenRouter** (Unified access to hundreds of models)
   - **Local Models** via **Ollama**
-  - **Asian Providers**: Qwen (Alibaba), Kimi (Moonshot), Minimax, Zhipu
+  - **Asian Providers**: Qwen (Qwen3-Max/Coder), Kimi (K2.5), Minimax (M2.2), Zhipu (GLM-5)
 - **Dynamic Debate Modes**:
   - **Standard (Free)**: Open-ended, multi-perspective discussion loop.
   - **Classic**: Formal structured debate (Opening -> Rebuttal -> Summary).

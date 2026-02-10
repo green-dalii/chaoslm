@@ -23,7 +23,8 @@ function initProviders() {
         availableProviders.push(new GenericOpenAIAdapter({
             id: "openai",
             name: "OpenAI",
-            baseURL: "https://api.openai.com/v1"
+            baseURL: "https://api.openai.com/v1",
+            defaultModels: ["gpt-5.3-codex", "gpt-5.2-thinking", "o1", "gpt-4o"]
         }));
 
         availableProviders.push(new AnthropicAdapter());
@@ -34,35 +35,35 @@ function initProviders() {
             id: "deepseek",
             name: "DeepSeek",
             baseURL: "https://api.deepseek.com",
-            defaultModels: ["deepseek-chat", "deepseek-reasoner"]
+            defaultModels: ["deepseek-v4", "deepseek-chat", "deepseek-reasoner"]
         }));
 
         availableProviders.push(new GenericOpenAIAdapter({
             id: "kimi",
             name: "Kimi (Moonshot)",
             baseURL: "https://api.moonshot.cn/v1",
-            defaultModels: ["moonshot-v1-8k", "moonshot-v1-32k", "moonshot-v1-128k"]
+            defaultModels: ["kimi-k2.5", "moonshot-v1-8k", "moonshot-v1-32k"]
         }));
 
         availableProviders.push(new GenericOpenAIAdapter({
             id: "minimax",
             name: "Minimax",
             baseURL: "https://api.minimax.io/v1",
-            defaultModels: ["abab6.5-chat", "abab6.5s-chat"]
+            defaultModels: ["m2.2", "abab6.5-chat"]
         }));
 
         availableProviders.push(new GenericOpenAIAdapter({
             id: "qwen",
             name: "Qwen (Alibaba)",
             baseURL: "https://dashscope-intl.aliyuncs.com/compatible-mode/v1",
-            defaultModels: ["qwen-plus", "qwen-turbo", "qwen-max"]
+            defaultModels: ["qwen3-max-thinking", "qwen3-coder", "qwen-plus"]
         }));
 
         availableProviders.push(new GenericOpenAIAdapter({
             id: "zhipu",
             name: "Zhipu (GLM)",
             baseURL: "https://open.bigmodel.cn/api/paas/v4",
-            defaultModels: ["glm-4", "glm-4-air", "glm-3-turbo"]
+            defaultModels: ["glm-5", "glm-4-plus", "glm-4"]
         }));
 
         availableProviders.push(new GenericOpenAIAdapter({

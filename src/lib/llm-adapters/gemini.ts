@@ -9,9 +9,10 @@ export class GeminiAdapter implements ILLMProvider {
     async listModels(apiKey: string): Promise<IModelInfo[]> {
         // Return curated list as SDK listing requires complex setup usually
         return [
-            { id: "gemini-1.5-pro", name: "Gemini 1.5 Pro", provider: "gemini", contextWindow: 1000000 },
-            { id: "gemini-1.5-flash", name: "Gemini 1.5 Flash", provider: "gemini", contextWindow: 1000000 },
-            { id: "gemini-1.0-pro", name: "Gemini 1.0 Pro", provider: "gemini", contextWindow: 32000 },
+            { id: "gemini-3-pro", name: "Gemini 3 Pro", provider: "gemini", contextWindow: 2000000 },
+            { id: "gemini-3-flash", name: "Gemini 3 Flash", provider: "gemini", contextWindow: 1000000 },
+            { id: "gemini-2.5-pro", name: "Gemini 2.5 Pro", provider: "gemini", contextWindow: 1000000 },
+            { id: "gemini-2.5-flash", name: "Gemini 2.5 Flash", provider: "gemini", contextWindow: 1000000 },
         ];
     }
 
