@@ -156,6 +156,34 @@ npm run dev
 
 ---
 
+## 部署
+
+ChaosLM 支持多种部署平台：
+
+### 本地开发
+```bash
+npm run dev
+```
+
+### Vercel（推荐）
+将 GitHub 仓库连接到 Vercel 实现自动部署。
+
+### Cloudflare Pages
+```bash
+# 安装依赖
+npm install
+
+# 构建用于 Cloudflare
+npm run build
+
+# 使用 Wrangler 部署
+npx wrangler pages deploy .open-next/cloudflare
+```
+
+更多详情请参阅 [OpenNext Cloudflare 适配器文档](https://opennext.js.org/cloudflare)。
+
+---
+
 ## 贡献
 
 欢迎提交 Pull Request！
@@ -183,5 +211,5 @@ MIT 许可证 - 详见 [LICENSE](LICENSE)。
 ---
 
 <p align="center">
-  由 <a href="https://github.com/greener">Greener</a> 用 ❤️ 构建
+  由 <a href="https://github.com/green-dalii">Greener-Dalii</a> 用 ❤️ 构建
 </p>

@@ -156,6 +156,34 @@ Watch or participate in the debate!
 
 ---
 
+## Deployment
+
+ChaosLM supports multiple deployment platforms:
+
+### Local Development
+```bash
+npm run dev
+```
+
+### Vercel (Recommended)
+Connect your GitHub repository to Vercel for automatic deployments.
+
+### Cloudflare Pages
+```bash
+# Install dependencies
+npm install
+
+# Build for Cloudflare
+npm run build
+
+# Deploy using Wrangler
+npx wrangler pages deploy .open-next/cloudflare
+```
+
+For more details, see the [OpenNext Cloudflare adapter documentation](https://opennext.js.org/cloudflare).
+
+---
+
 ## Contributing
 
 Contributions are welcome! Please feel free to submit a Pull Request.
@@ -183,5 +211,5 @@ Built with:
 ---
 
 <p align="center">
-  Made with ❤️ by <a href="https://github.com/greener">Greener</a>
+  Made with ❤️ by <a href="https://github.com/green-dalii">Greener-Dalii</a>
 </p>
