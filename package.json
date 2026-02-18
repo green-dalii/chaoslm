@@ -41,5 +41,20 @@
     "tailwindcss": "^4",
     "typescript": "^5",
     "wrangler": "^4.66.0"
+  },
+  "overrides": {
+    "lightningcss": {
+      "optionalDependencies": {
+        "lightningcss-darwin-arm64": "^1.29.1",
+        "lightningcss-darwin-x64": "^1.29.1",
+        "lightningcss-linux-arm-gnueabihf": "^1.29.1",
+        "lightningcss-linux-arm64-gnu": "^1.29.1",
+        "lightningcss-linux-arm64-musl": "^1.29.1",
+        "lightningcss-linux-x64-gnu": "^1.29.1",
+        "lightningcss-linux-x64-musl": "^1.29.1",
+        "lightningcss-win32-arm64-msvc": "^1.29.1",
+        "lightningcss-win32-x64-msvc": "^1.29.1"
+      }
+    }
   }
 }
