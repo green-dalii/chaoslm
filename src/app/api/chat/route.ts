@@ -2,8 +2,6 @@ import { NextRequest, NextResponse } from "next/server";
 import { getProvider } from "@/lib/llm-adapters";
 import { IMessage } from "@/types";
 
-export const runtime = "edge"; // Compatible with Cloudflare Pages
-
 export async function POST(req: NextRequest) {
     console.log("[API] /api/chat hit");
     try {

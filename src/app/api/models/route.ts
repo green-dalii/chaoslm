@@ -1,8 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getProvider } from "@/lib/llm-adapters";
 
-export const runtime = "edge";
-
 export async function GET(req: NextRequest) {
     const { searchParams } = new URL(req.url);
     const providerId = searchParams.get("providerId");
