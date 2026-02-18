@@ -173,7 +173,7 @@ npm run dev
 ChaosLM 已配置为使用 OpenNext 适配器部署到 Cloudflare Pages。
 
 **构建设置：**
-- 构建命令：`npx @opennextjs/cloudflare`
+- 构建命令：`npx @opennextjs/cloudflare build`
 - 输出目录：`.open-next`
 
 或手动部署：
@@ -182,7 +182,7 @@ ChaosLM 已配置为使用 OpenNext 适配器部署到 Cloudflare Pages。
 npm install
 
 # 构建用于 Cloudflare
-npx @opennextjs/cloudflare
+npx @opennextjs/cloudflare build
 
 # 使用 Wrangler 部署
 npx wrangler deploy

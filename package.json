@@ -4,8 +4,9 @@
   "private": true,
   "scripts": {
     "generate-rules": "npx tsx scripts/generate-rules.ts",
-    "predev": "npm run generate-rules",
-    "prebuild": "npm run generate-rules",
+    "generate-featured": "npx tsx scripts/generate-featured-sessions.ts",
+    "predev": "npm run generate-rules && npm run generate-featured",
+    "prebuild": "npm run generate-rules && npm run generate-featured",
     "dev": "next dev",
     "build": "next build --webpack",
     "start": "next start",

@@ -2,20 +2,22 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
+import { useState } from "react";
 import { useSettingsStore, translations } from "@/hooks/use-settings-store";
-import { LayoutDashboard, Swords, Settings, Github, Languages, Zap, Sun, Moon, Info, FileJson } from "lucide-react";
-import { motion } from "framer-motion";
+import { LayoutDashboard, Swords, Settings, Github, Languages, Zap, Sun, Moon, Info, FileJson, Menu, X } from "lucide-react";
+import { motion, AnimatePresence } from "framer-motion";
 
 export function Navbar() {
     const pathname = usePathname();
+    const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
     const { language, setLanguage, theme, setTheme } = useSettingsStore();
     const t = translations[language].nav;
-    const commonT = translations[language].setup; // For Models & Providers label
+    const commonT = translations[language].setup;
 
     const navItems = [
         { name: t.home, href: "/", icon: LayoutDashboard },
         { name: t.arena, href: "/arena", icon: Swords },
-        { name: "Showcase", href: "/showcase", icon: FileJson }, // Consider adding translation later
+        { name: "Showcase", href: "/showcase", icon: FileJson },
         { name: t.setup, href: "/setup", icon: Settings },
         { name: language === 'zh' ? '模型与插件' : 'Models & Providers', href: "/settings", icon: Zap },
         { name: language === 'zh' ? '关于' : 'About', href: "/about", icon: Info },
@@ -60,6 +62,15 @@ export function Navbar() {
                                 );
                             })}
                         </div>
+
+                        {/* Mobile Menu Button */}
+                        <button
+                            onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
+                            className="md:hidden p-2 text-zinc-500 hover:text-zinc-900 dark:text-zinc-400 dark:hover:text-white hover:bg-zinc-100 dark:hover:bg-zinc-900 rounded-lg transition-all"
+                            aria-label="Toggle menu"
+                        >
+                            {mobileMenuOpen ? <X className="w-5 h-5" /> : <Menu className="w-5 h-5" />}
+                        </button>
                     </div>
 
                     <div className="flex items-center gap-4">
@@ -97,6 +108,40 @@ export function Navbar() {
                     </div>
                 </div>
             </div>
+
+            {/* Mobile Menu Dropdown */}
+            <AnimatePresence>
+                {mobileMenuOpen && (
+                    <motion.div
+                        initial={{ opacity: 0, height: 0 }}
+                        animate={{ opacity: 1, height: "auto" }}
+                        exit={{ opacity: 0, height: 0 }}
+                        transition={{ duration: 0.2 }}
+                        className="md:hidden border-t border-zinc-200/50 dark:border-zinc-800/50 bg-white/95 dark:bg-zinc-950/95 backdrop-blur-xl"
+                    >
+                        <div className="px-4 py-3 space-y-1">
+                            {navItems.map((item) => {
+                                const isActive = pathname === item.href;
+                                return (
+                                    <Link
+                                        key={item.href}
+                                        href={item.href}
+                                        onClick={() => setMobileMenuOpen(false)}
+                                        className={`flex items-center gap-3 px-3 py-2.5 text-sm font-medium rounded-lg transition-colors ${
+                                            isActive
+                                                ? "text-zinc-900 dark:text-white bg-zinc-100 dark:bg-zinc-900"
+                                                : "text-zinc-500 hover:text-zinc-900 dark:text-zinc-400 dark:hover:text-white hover:bg-zinc-100 dark:hover:bg-zinc-900"
+                                        }`}
+                                    >
+                                        <item.icon className="w-4 h-4" />
+                                        {item.name}
+                                    </Link>
+                                );
+                            })}
+                        </div>
+                    </motion.div>
+                )}
+            </AnimatePresence>
         </nav>
     );
 }

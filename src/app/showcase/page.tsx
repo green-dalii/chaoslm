@@ -1,8 +1,7 @@
-import fs from 'fs';
-import path from 'path';
 import { Metadata } from 'next';
 import { FileJson, Users, MessageSquare } from 'lucide-react';
-import { ShowcaseClient } from './ShowcaseClient'; // We'll create this for client-side interactions
+import { ShowcaseClient } from './ShowcaseClient';
+import sessionsData from '@/lib/featured-sessions.json';
 
 export const metadata: Metadata = {
     title: 'Showcase - ChaosLM',
@@ -10,36 +9,8 @@ export const metadata: Metadata = {
 };
 
 async function getFeaturedSessions() {
-    const featuredDir = path.join(process.cwd(), 'public', 'featured-sessions');
-
-    if (!fs.existsSync(featuredDir)) {
-        return [];
-    }
-
-    const files = fs.readdirSync(featuredDir).filter(file => file.endsWith('.json'));
-
-    const sessions = files.map(file => {
-        try {
-            const content = fs.readFileSync(path.join(featuredDir, file), 'utf-8');
-            const data = JSON.parse(content);
-            return {
-                filename: file,
-                id: data.id,
-                topic: data.topic || 'Untitled Session',
-                mode: data.debateMode || 'Standard',
-                agentsCount: data.agents?.length || 0,
-                turnsCount: data.history?.length || 0,
-                timestamp: data.savedAt || new Date().toISOString(), // Assuming savedAt exists or fallback
-                data: data // Pass full data to client for import
-            };
-        } catch (e) {
-            console.error(`Error reading session ${file}:`, e);
-            return null;
-        }
-    }).filter(Boolean);
-
-    // Sort by newest if possible, or filename
-    return sessions;
+    // Use statically generated JSON data (works on Cloudflare)
+    return sessionsData || [];
 }
 
 export default async function ShowcasePage() {
