@@ -66,7 +66,7 @@
 
 ```bash
 # 克隆仓库
-git clone https://github.com/greener-chan/chaoslm.git
+git clone https://github.com/green-dalii/chaoslm.git
 cd chaoslm
 
 # 安装依赖
@@ -211,5 +211,5 @@ MIT 许可证 - 详见 [LICENSE](LICENSE)。
 ---
 
 <p align="center">
-  由 <a href="https://github.com/green-dalii">Greener-Dalii</a> 用 ❤️ 构建
+  由 <a href="https://github.com/green-dalii">green-dalii</a> 用 ❤️ 构建
 </p>

@@ -91,7 +91,7 @@ export default function AboutPage() {
                     </p>
 
                     <div className="flex justify-center gap-4">
-                        <a href="https://github.com/greener" target="_blank" rel="noopener noreferrer" className="p-2 text-zinc-500 hover:text-black dark:hover:text-white transition-colors">
+                        <a href="https://github.com/green-dalii" target="_blank" rel="noopener noreferrer" className="p-2 text-zinc-500 hover:text-black dark:hover:text-white transition-colors">
                             <Github className="w-5 h-5" />
                         </a>
                     </div>

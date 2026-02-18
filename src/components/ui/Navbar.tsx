@@ -87,7 +87,7 @@ export function Navbar() {
                         <div className="w-px h-4 bg-zinc-200 dark:bg-zinc-800 mx-1 hidden sm:block" />
 
                         <a
-                            href="https://github.com/greener/chaoslm"
+                            href="https://github.com/green-dalii/chaoslm"
                             target="_blank"
                             rel="noopener noreferrer"
                             className="p-2 text-zinc-500 hover:text-zinc-900 dark:text-zinc-400 dark:hover:text-white hover:bg-zinc-100 dark:hover:bg-zinc-900 rounded-lg transition-all"

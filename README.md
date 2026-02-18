@@ -66,7 +66,7 @@ Seamlessly integrate with world-leading LLM providers:
 
 ```bash
 # Clone the repository
-git clone https://github.com/greener-chan/chaoslm.git
+git clone https://github.com/green-dalii/chaoslm.git
 cd chaoslm
 
 # Install dependencies
@@ -211,5 +211,5 @@ Built with:
 ---
 
 <p align="center">
-  Made with ❤️ by <a href="https://github.com/green-dalii">Greener-Dalii</a>
+  Made with ❤️ by <a href="https://github.com/green-dalii">green-dalii</a>
 </p>
