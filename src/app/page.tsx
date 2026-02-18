@@ -37,7 +37,7 @@ export default function Home() {
   };
 
   return (
-    <div className="flex-1 flex flex-col items-center justify-center p-8 sm:p-20 font-sans">
+    <div className="h-full flex flex-col items-center justify-center px-4 sm:px-6 lg:px-8 pt-20 pb-12 overflow-y-auto font-sans">
       {/* Alert Banner */}
       {showAlert && (
         <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4">

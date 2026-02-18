@@ -26,7 +26,7 @@ export default function RootLayout({
         className="antialiased bg-background text-foreground font-sans h-screen overflow-hidden flex flex-col"
       >
         <Navbar />
-        <main className="flex-1 overflow-hidden flex flex-col">
+        <main className="flex-1 flex flex-col overflow-hidden">
           {children}
         </main>
       </body>

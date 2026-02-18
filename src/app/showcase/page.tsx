@@ -17,7 +17,7 @@ export default function ShowcasePage() {
     const sessions = getFeaturedSessions();
 
     return (
-        <div className="min-h-screen bg-zinc-50 dark:bg-black text-zinc-900 dark:text-zinc-50 pt-20 px-4 sm:px-6 lg:px-8 pb-12">
+        <div className="h-full bg-zinc-50 dark:bg-black text-zinc-900 dark:text-zinc-50 px-4 sm:px-6 lg:px-8 pt-20 pb-12 overflow-y-auto">
             <div className="max-w-7xl mx-auto">
                 <header className="mb-10 text-center">
                     <h1 className="text-4xl font-black text-zinc-900 dark:text-zinc-100 mb-4">

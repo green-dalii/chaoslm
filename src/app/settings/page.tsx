@@ -3,7 +3,7 @@
 import { ModelManager } from "@/components/models/ModelManager";
 import { useSettingsStore, translations } from "@/hooks/use-settings-store";
 import { useModelStore } from "@/hooks/use-model-store";
-import { Settings, Shield, Cpu, Sparkles, AlertCircle, CheckCircle } from "lucide-react";
+import { Zap, Shield, Cpu, Sparkles, CheckCircle, ChevronDown, ChevronUp } from "lucide-react";
 import { useState, useEffect } from "react";
 
 export default function SettingsPage() {
@@ -16,6 +16,8 @@ export default function SettingsPage() {
     const [temperature, setTemperature] = useState(systemModel?.temperature || 1.0);
     const [isSaving, setIsSaving] = useState(false);
     const [showSaved, setShowSaved] = useState(false);
+    const [providersExpanded, setProvidersExpanded] = useState(true);
+    const [systemModelExpanded, setSystemModelExpanded] = useState(false);
 
     const getModelsFor = (pid: string) => providers.find(p => p.id === pid)?.models || [];
     const activeProviders = providers.filter(p => p.enabled || p.apiKey);
@@ -58,16 +60,16 @@ export default function SettingsPage() {
     const isConfigured = isSystemModelConfigured();
 
     return (
-        <div className="flex flex-1 flex-col w-full max-w-6xl mx-auto px-3 sm:px-4 py-6 overflow-hidden text-zinc-900 dark:text-zinc-100">
+        <div className="h-full flex flex-col w-full max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-6 overflow-y-auto text-zinc-900 dark:text-zinc-100">
             <header className="mb-6 shrink-0">
                 <div className="flex items-center gap-4">
                     <div className="w-10 h-10 bg-zinc-900 dark:bg-white rounded-xl shadow-lg flex items-center justify-center">
-                        <Settings className="w-5 h-5 text-white dark:text-zinc-900" />
+                        <Zap className="w-5 h-5 text-white dark:text-zinc-900" />
                     </div>
                     <div>
-                        <h1 className="text-2xl font-bold tracking-tight">{language === 'zh' ? '项目配置' : 'Project Settings'}</h1>
+                        <h1 className="text-2xl font-bold tracking-tight">{language === 'zh' ? '模型配置' : 'Model Config'}</h1>
                         <p className="text-xs text-zinc-500 font-medium">
-                            {language === 'zh' ? '管理 API 密钥、AI 模型提供商和 ChaosLM 系统配置' : 'Manage API keys, AI providers, and ChaosLM system configuration'}
+                            {language === 'zh' ? '管理 API 密钥和 AI 模型配置' : 'Manage API keys and AI model configuration'}
                         </p>
                     </div>
                 </div>
@@ -78,40 +80,55 @@ export default function SettingsPage() {
                 <div className="flex-1 flex flex-col gap-4 min-w-0 overflow-y-auto pr-1">
                     {/* Model Providers - 先配置 Provider */}
                     <div className="flex flex-col bg-white dark:bg-zinc-900 rounded-2xl border border-zinc-200 dark:border-zinc-800 shadow-sm overflow-hidden">
-                        <div className="px-4 py-3 border-b border-zinc-100 dark:border-zinc-800 flex items-center justify-between shrink-0">
+                        <button
+                            onClick={() => setProvidersExpanded(!providersExpanded)}
+                            className="w-full px-4 py-3 border-b border-zinc-100 dark:border-zinc-800 flex items-center justify-between shrink-0 hover:bg-zinc-50 dark:hover:bg-zinc-800/50 transition-colors"
+                        >
                             <h2 className="text-sm font-bold flex items-center gap-2">
                                 <Cpu className="w-4 h-4 text-blue-500" />
                                 {language === 'zh' ? '模型提供商' : 'Model Providers'}
                             </h2>
-                            <span className="text-[10px] text-zinc-400 hidden sm:block">
-                                {language === 'zh' ? '请先添加并配置您的 AI 提供商' : 'Add and configure your AI providers first'}
-                            </span>
-                        </div>
-                        <div className="overflow-y-auto p-3" style={{ maxHeight: '320px' }}>
-                            <ModelManager />
-                        </div>
+                            <div className="flex items-center gap-2">
+                                <span className="text-[10px] text-zinc-400 hidden sm:block">
+                                    {language === 'zh' ? '请先添加并配置您的 AI 提供商' : 'Add and configure your AI providers first'}
+                                </span>
+                                {providersExpanded ? (
+                                    <ChevronUp className="w-4 h-4 text-zinc-400" />
+                                ) : (
+                                    <ChevronDown className="w-4 h-4 text-zinc-400" />
+                                )}
+                            </div>
+                        </button>
+                        {providersExpanded && (
+                            <div className="overflow-y-auto p-3" style={{ maxHeight: '60vh' }}>
+                                <ModelManager />
+                            </div>
+                        )}
                     </div>
 
                     {/* ChaosLM System Model Configuration - 再配置系统模型 */}
-                    <div className="p-4 bg-zinc-50 dark:bg-zinc-900/50 rounded-2xl border border-zinc-200 dark:border-zinc-800 shadow-sm">
-                        <div className="flex items-center gap-3 mb-3">
-                            <div className="w-8 h-8 bg-zinc-800 dark:bg-zinc-200 rounded-lg flex items-center justify-center">
-                                <Sparkles className="w-4 h-4 text-white dark:text-zinc-900" />
-                            </div>
-                            <div className="min-w-0">
-                                <h2 className="text-sm font-bold text-zinc-900 dark:text-zinc-100 truncate">
-                                    {language === 'zh' ? 'ChaosLM 系统模型' : 'ChaosLM System Model'}
-                                </h2>
-                                <p className="text-[10px] text-zinc-500 dark:text-zinc-400 truncate">
+                    <div className="flex flex-col bg-white dark:bg-zinc-900 rounded-2xl border border-zinc-200 dark:border-zinc-800 shadow-sm overflow-hidden">
+                        <button
+                            onClick={() => setSystemModelExpanded(!systemModelExpanded)}
+                            className="w-full px-4 py-3 border-b border-zinc-100 dark:border-zinc-800 flex items-center justify-between shrink-0 hover:bg-zinc-50 dark:hover:bg-zinc-800/50 transition-colors"
+                        >
+                            <h2 className="text-sm font-bold flex items-center gap-2">
+                                <Sparkles className="w-4 h-4 text-amber-500" />
+                                {language === 'zh' ? 'ChaosLM 系统模型' : 'ChaosLM System Model'}
+                            </h2>
+                            <div className="flex items-center gap-2">
+                                <span className="text-[10px] text-zinc-400 hidden sm:block">
                                     {language === 'zh' ? '用于生成引导内容和系统提示' : 'For generating bootstrap content'}
-                                </p>
+                                </span>
+                                {systemModelExpanded ? (
+                                    <ChevronUp className="w-4 h-4 text-zinc-400" />
+                                ) : (
+                                    <ChevronDown className="w-4 h-4 text-zinc-400" />
+                                )}
                             </div>
-                            {isConfigured ? (
-                                <CheckCircle className="w-4 h-4 text-zinc-600 dark:text-zinc-400 ml-auto shrink-0" />
-                            ) : (
-                                <AlertCircle className="w-4 h-4 text-zinc-400 ml-auto shrink-0" />
-                            )}
-                        </div>
+                        </button>
+                        {systemModelExpanded && (
+                            <div className="overflow-y-auto p-3" style={{ maxHeight: '60vh' }}>
 
                         {!isConfigured && (
                             <div className="mb-3 p-2 bg-zinc-100 dark:bg-zinc-800 rounded-lg border border-zinc-200 dark:border-zinc-700">
@@ -202,6 +219,8 @@ export default function SettingsPage() {
                                 <p className="text-xs font-medium text-zinc-900 dark:text-zinc-100 truncate">
                                     {systemModel.providerId} / {systemModel.modelId}
                                 </p>
+                            </div>
+                        )}
                             </div>
                         )}
                     </div>

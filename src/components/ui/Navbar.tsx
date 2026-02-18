@@ -17,9 +17,9 @@ export function Navbar() {
     const navItems = [
         { name: t.home, href: "/", icon: LayoutDashboard },
         { name: t.arena, href: "/arena", icon: Swords },
-        { name: "Showcase", href: "/showcase", icon: FileJson },
+        { name: t.showcase, href: "/showcase", icon: FileJson },
         { name: t.setup, href: "/setup", icon: Settings },
-        { name: language === 'zh' ? '模型与插件' : 'Models & Providers', href: "/settings", icon: Zap },
+        { name: t.modelConfig, href: "/settings", icon: Zap },
         { name: language === 'zh' ? '关于' : 'About', href: "/about", icon: Info },
     ];
 

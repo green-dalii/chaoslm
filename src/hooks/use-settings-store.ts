@@ -48,8 +48,9 @@ export const translations = {
         nav: {
             home: "Home",
             arena: "Arena",
-            setup: "Setup",
+            setup: "Discussion Setup",
             showcase: "Showcase",
+            modelConfig: "Model Config",
             github: "GitHub",
             toggleTheme: "Toggle Theme"
         },
@@ -128,8 +129,9 @@ export const translations = {
         nav: {
             home: "首页",
             arena: "竞技场",
-            setup: "设置",
+            setup: "讨论设置",
             showcase: "展示",
+            modelConfig: "模型配置",
             github: "GitHub",
             toggleTheme: "切换主题"
         },
