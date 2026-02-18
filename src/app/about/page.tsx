@@ -10,6 +10,7 @@ export default function AboutPage() {
         en: {
             title: "About",
             subtitle: "Orchestrating Multi-Agent Discussion Arenas",
+            version: "Version 0.2.0",
             intro1: "ChaosLM is an experimental project designed to explore the emergent dynamics of multi-agent interactions. By placing diverse AI personas in a structured yet open-ended \"arena,\" we can observe how different perspectives collisions, consensus forms, and chaos unfolds.",
             intro2: "Unlike traditional chatbots that serve a single user, ChaosLM acts as a conductor for a symphony of agents. The goal isn't just to get an answer, but to witness the process of deliberation itself.",
             chaosMode: "🎲 Chaos Mode (Free)",
@@ -22,6 +23,7 @@ export default function AboutPage() {
         zh: {
             title: "关于",
             subtitle: "多智能体协作与辩论竞技场",
+            version: "版本 0.2.0",
             intro1: "ChaosLM 是一个实验性项目，旨在探索多智能体交互的涌现动力学。通过将不同的 AI 角色置于一个结构化但开放的“竞技场”中，我们可以观察不同观点的碰撞、共识的形成以及混沌的展开。",
             intro2: "与服务单一用户的传统聊天机器人不同，ChaosLM 充当智能体交响乐的指挥家。目标不仅仅是获得一个答案，而是通过观察审议过程本身来获得洞察。",
             chaosMode: "🎲 自由涌现模式 (Chaos Mode)",
@@ -46,6 +48,9 @@ export default function AboutPage() {
                     </h1>
                     <p className="text-xl text-zinc-500 dark:text-zinc-400">
                         {t.subtitle}
+                    </p>
+                    <p className="text-sm text-zinc-400 dark:text-zinc-500 font-mono">
+                        {t.version}
                     </p>
                 </div>
 
