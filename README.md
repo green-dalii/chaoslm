@@ -169,15 +169,23 @@ npm run dev
 Connect your GitHub repository to Vercel for automatic deployments.
 
 ### Cloudflare Pages
+
+ChaosLM is configured for Cloudflare Pages deployment using the OpenNext adapter.
+
+**Build Configuration:**
+- Build command: `npx @opennextjs/cloudflare`
+- Output directory: `.open-next`
+
+Or deploy manually:
 ```bash
 # Install dependencies
 npm install
 
 # Build for Cloudflare
-npm run build
+npx @opennextjs/cloudflare
 
 # Deploy using Wrangler
-npx wrangler pages deploy .open-next/cloudflare
+npx wrangler deploy
 ```
 
 For more details, see the [OpenNext Cloudflare adapter documentation](https://opennext.js.org/cloudflare).

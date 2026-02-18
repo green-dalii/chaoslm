@@ -169,15 +169,23 @@ npm run dev
 将 GitHub 仓库连接到 Vercel 实现自动部署。
 
 ### Cloudflare Pages
+
+ChaosLM 已配置为使用 OpenNext 适配器部署到 Cloudflare Pages。
+
+**构建设置：**
+- 构建命令：`npx @opennextjs/cloudflare`
+- 输出目录：`.open-next`
+
+或手动部署：
 ```bash
 # 安装依赖
 npm install
 
 # 构建用于 Cloudflare
-npm run build
+npx @opennextjs/cloudflare
 
 # 使用 Wrangler 部署
-npx wrangler pages deploy .open-next/cloudflare
+npx wrangler deploy
 ```
 
 更多详情请参阅 [OpenNext Cloudflare 适配器文档](https://opennext.js.org/cloudflare)。
