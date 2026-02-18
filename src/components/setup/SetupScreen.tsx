@@ -183,7 +183,7 @@ export function SetupScreen() {
     const activeProviders = useMemo(() => providers.filter(p => p.enabled || p.apiKey), [providers]);
 
     return (
-        <div className="flex flex-1 flex-col w-full px-4 sm:px-6 lg:px-8 py-6 pt-20 min-h-0 overflow-hidden text-zinc-800 dark:text-zinc-200">
+        <div className="flex flex-1 flex-col w-full px-4 sm:px-6 lg:px-8 py-4 sm:py-6 pt-16 sm:pt-20 min-h-0 overflow-auto text-zinc-800 dark:text-zinc-200">
             <header className="flex justify-between items-center mb-8 shrink-0">
                 <div className="flex items-center gap-4">
                     <div className="w-10 h-10 bg-zinc-900 dark:bg-white rounded-xl shadow-lg flex items-center justify-center">

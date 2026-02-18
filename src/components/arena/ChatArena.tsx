@@ -787,8 +787,8 @@ function NextSpeakerQueue({ agents, userRole, language, currentTurn, topic, mode
                                 <img src={agent.avatar || `https://api.dicebear.com/7.x/avataaars/svg?seed=${agent.id}`} className="w-full h-full object-cover" />
                             </div>
                             {index === 0 && (
-                                <span className="absolute -bottom-3 text-[9px] font-bold bg-blue-100 dark:bg-blue-900 text-blue-700 dark:text-blue-300 px-1.5 rounded-full whitespace-nowrap">
-                                    {language === 'zh' ? '下一位' : 'Next'}
+                                <span className="absolute -bottom-4 text-[9px] font-bold bg-blue-100 dark:bg-blue-900 text-blue-700 dark:text-blue-300 px-1.5 rounded-full whitespace-nowrap max-w-20 truncate" title={agent.name}>
+                                    {language === 'zh' ? `下一位：${agent.name}` : `Next: ${agent.name}`}
                                 </span>
                             )}
                         </motion.div>

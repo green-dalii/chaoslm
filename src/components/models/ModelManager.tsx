@@ -319,7 +319,7 @@ export function ModelManager() {
         <div className="flex flex-col gap-3">
             {/* 已配置的 Provider */}
             {configuredProviders.length > 0 && (
-                <div className="grid grid-cols-2 gap-2">
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
                     {configuredProviders.map(p => renderProviderButton(p, true))}
                 </div>
             )}

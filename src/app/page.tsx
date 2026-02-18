@@ -130,15 +130,15 @@ export default function Home() {
         <div className="flex gap-4 items-center flex-col sm:flex-row w-full sm:w-auto">
           <button
             onClick={handleStartNew}
-            className="group relative flex items-center gap-3 bg-zinc-900 dark:bg-white text-white dark:text-zinc-900 px-8 py-4 rounded-2xl font-bold text-lg hover:scale-105 active:scale-95 transition-all shadow-xl shadow-zinc-500/20"
+            className="w-full sm:w-auto group relative flex items-center justify-center gap-2 bg-zinc-900 dark:bg-white text-white dark:text-zinc-900 h-12 sm:h-14 px-8 rounded-2xl font-bold text-base sm:text-lg hover:scale-105 active:scale-95 transition-all shadow-xl shadow-zinc-500/20"
           >
-            <Zap className="w-6 h-6 fill-current" />
+            <Zap className="w-5 h-5 sm:w-6 sm:h-6 fill-current" />
             {t.start}
-            <ArrowRight className="w-5 h-5 group-hover:translate-x-1 transition-transform" />
+            <ArrowRight className="w-4 h-4 sm:w-5 sm:h-5 group-hover:translate-x-1 transition-transform" />
           </button>
           <Link
             href="/arena"
-            className="w-full sm:w-auto rounded-full border border-zinc-200 dark:border-zinc-800 transition-all flex items-center justify-center bg-white dark:bg-zinc-950 text-zinc-900 dark:text-zinc-100 gap-2 hover:bg-zinc-50 dark:hover:bg-zinc-900 hover:scale-105 active:scale-95 text-sm sm:text-base font-bold h-12 sm:h-14 px-8 shadow-lg"
+            className="w-full sm:w-auto flex items-center justify-center gap-2 bg-white dark:bg-zinc-950 text-zinc-900 dark:text-zinc-100 h-12 sm:h-14 px-8 rounded-2xl font-bold text-base sm:text-lg border border-zinc-200 dark:border-zinc-800 hover:bg-zinc-50 dark:hover:bg-zinc-900 hover:scale-105 active:scale-95 transition-all shadow-lg"
           >
             {t.enterArena}
           </Link>
@@ -155,9 +155,8 @@ export default function Home() {
         )}
       </main>
 
-      <footer className="mt-20 flex flex-col gap-2 items-center justify-center text-xs text-zinc-400 font-medium tracking-wider uppercase">
-        <p>© {new Date().getFullYear()} ChaosLM Project. All rights reserved.</p>
-        <p className="opacity-70">Created by Greener-Dalii</p>
+      <footer className="mt-20 flex items-center justify-center text-xs text-zinc-400 font-medium tracking-wider">
+        <p>© {new Date().getFullYear()} Greener-Dalii. ChaosLM All rights reserved.</p>
       </footer>
     </div>
   );
