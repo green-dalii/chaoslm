@@ -3,7 +3,13 @@ import { useRoomStore } from "./use-room-store";
 import { useModelStore } from "./use-model-store";
 import { IMessage, IRoomState } from "@/types";
 import { v4 as uuidv4 } from "uuid";
-import { getSchedule, ScheduleResult } from "@/lib/conductor/scheduler";
+import { getSchedule, ScheduleResult, getUpcomingSpeakers } from "@/lib/conductor/scheduler";
+import {
+    generateBootstrapContext,
+    generateSystemBootstrapPrompt,
+    generateChaosLMOpeningPrompt,
+    generateAIHostOpeningPrompt
+} from "@/lib/debate-rules";
 
 export function useConductor() {
     const {
@@ -15,6 +21,7 @@ export function useConductor() {
         updateMessage,
         setTurn,
         setStatus,
+        setBootstrapContext,
         userRole,
         // Mode & Round State
         debateMode,
@@ -23,7 +30,8 @@ export function useConductor() {
         setCurrentStage,
         setCurrentRound,
         isEnding,
-        setIsEnding
+        setIsEnding,
+        bootstrapContext
     } = useRoomStore();
 
     const isProcessing = useRef(false);
@@ -46,34 +54,121 @@ export function useConductor() {
         setIsGenerating(false);
     };
 
+    // PHASE 1: Bootstrap - ChaosLM (Director) generates preparation materials
+    // This runs "behind the scenes" without adding to chat history
+    const runBootstrapPhase = async (state: ReturnType<typeof useRoomStore.getState>) => {
+        const moderator = state.agents.find(a => a.role === 'host');
+        if (!moderator) {
+            // No moderator, skip bootstrap
+            setBootstrapContext('');
+            advanceTurn();
+            return;
+        }
+
+        isProcessing.current = true;
+        setIsGenerating(true);
+        abortController.current = new AbortController();
+
+        try {
+            const language = state.topic.match(/[\u4e00-\u9fa5]/) ? 'zh' : 'en';
+            const bootstrapPrompt = generateSystemBootstrapPrompt(state, language as 'en' | 'zh');
+
+            const providerConfig = useModelStore.getState().getProviderConfig(moderator.providerId);
+
+            const payload = {
+                providerId: moderator.providerId,
+                modelId: moderator.modelId,
+                apiKey: providerConfig?.apiKey || "",
+                baseURL: providerConfig?.baseURL,
+                systemPrompt: bootstrapPrompt,
+                temperature: moderator.temperature,
+                messages: [] // No history needed for bootstrap
+            };
+
+            const response = await fetch("/api/chat", {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify(payload),
+                signal: abortController.current.signal
+            });
+
+            if (!response.ok) throw new Error(`API ${response.status}: ${await response.text()}`);
+            if (!response.body) throw new Error("No response body");
+
+            const reader = response.body.getReader();
+            const decoder = new TextDecoder();
+            let buffer = "";
+            let contentAccumulator = "";
+
+            while (true) {
+                const { done, value } = await reader.read();
+                if (done) break;
+                const chunk = decoder.decode(value, { stream: true });
+                buffer += chunk;
+                const lines = buffer.split("\n");
+                buffer = lines.pop() || "";
+
+                for (const line of lines) {
+                    if (line.trim().startsWith("data: ")) {
+                        try {
+                            const data = JSON.parse(line.trim().slice(6));
+                            const chunkContent = data.content || "";
+                            if (!data.isThinking && chunkContent) {
+                                contentAccumulator += chunkContent;
+                            }
+                        } catch (e) { }
+                    }
+                }
+            }
+
+            // Store bootstrap context in state (NOT in chat history)
+            setBootstrapContext(contentAccumulator);
+
+        } catch (error: any) {
+            console.error("Bootstrap generation failed:", error);
+            // Even if bootstrap fails, continue with empty context
+            setBootstrapContext('');
+        } finally {
+            isProcessing.current = false;
+            setIsGenerating(false);
+            // Continue to next phase (opening)
+            advanceTurn();
+        }
+    };
+
     // Helper: Run an agent's turn
     const runTurn = async (agentId?: string, overridePrompt?: string) => {
         const state = useRoomStore.getState();
         const targetId = agentId || state.currentTurn;
         if (!targetId || isProcessing.current) return;
 
-        // Special case: System Bootstrap
+        // Get current schedule to understand what phase we're in
+        const schedule = getSchedule(state);
+
+        // PHASE 1: BOOTSTRAP - ChaosLM (Director) generates preparation materials
+        // This is done "behind the scenes" - not shown in chat
+        if (targetId === 'system' && schedule.isSystemBootstrap && schedule.phase === 'bootstrap') {
+            await runBootstrapPhase(state);
+            return;
+        }
+
+        // PHASE 2: OPENING - ChaosLM does opening if user is host, or AI Moderator does opening
         let currentAgent = state.agents.find((a) => a.id === targetId);
+        let systemPromptOverride: string | null = null;
 
-        // If target is 'system', we use the Moderator's model or a default to generate context
-        if (targetId === 'system') {
+        if (targetId === 'system' && schedule.phase === 'opening') {
+            // ChaosLM does brief opening then hands over to user moderator
             const moderator = state.agents.find(a => a.role === 'host');
-
-            // Define Mode Rules
-            const modeRules: Record<IRoomState['debateMode'], string> = {
-                standard: "STANDARD MODE: This is an open-ended, multi-perspective discussion. There are no fixed 'Pro' or 'Con' sides. Participants should explore the topic from diverse, divergent, and creative angles, prioritizing breadth and depth of thought over winning an argument.",
-                classic: "CLASSIC MODE: Formal debate structure with assigned stances (Pro/Con). Sequence: Introduction -> Opening -> Rebuttal -> Free Debate -> Summary -> Conclusion.",
-                custom: `CUSTOM MODE: Round-limited debate with assigned stances. Each participant gets ${state.maxRounds} rounds of speaking time.`
-            };
+            const language = state.topic.match(/[\u4e00-\u9fa5]/) ? 'zh' : 'en';
 
             if (moderator) {
+                systemPromptOverride = generateChaosLMOpeningPrompt(state, state.bootstrapContext || '', language as 'en' | 'zh');
                 currentAgent = {
                     ...moderator,
                     id: 'system',
-                    name: 'System',
-                    systemPrompt: `You are the debate system. Generate a clear, structured background and ruleset for the topic: "${state.topic}". 
-Rules of the current mode: ${modeRules[state.debateMode]}
-Format your output as a professional briefing document.`
+                    name: 'ChaosLM',
+                    systemPrompt: systemPromptOverride,
+                    role: 'host'
                 };
             } else {
                 advanceTurn();
@@ -81,6 +176,7 @@ Format your output as a professional briefing document.`
             }
         }
 
+        // Normal turn execution
         if (!currentAgent) return;
 
         isProcessing.current = true;
@@ -126,9 +222,46 @@ Format your output as a professional briefing document.`
 
         const providerConfig = useModelStore.getState().getProviderConfig(currentAgent.providerId);
 
-        // Find if there's a System Bootstrap message in history to inject
-        const bootstrapMsg = state.history.find(m => m.senderId === 'system' && !m.content.startsWith('['));
-        const bootstrapContent = bootstrapMsg ? `\n[DEBATE BACKGROUND]\n${bootstrapMsg.content}\n` : "";
+        // Check if this is AI Moderator Opening Phase
+        const isAIOpening = schedule.phase === 'opening' &&
+            targetId !== 'system' &&
+            currentAgent.role === 'host' &&
+            state.history.filter(m => m.senderId === targetId).length === 0; // First time moderator speaks
+
+        // For AI Moderator Opening, inject full bootstrap context
+        let bootstrapContent = "";
+        if (isAIOpening) {
+            const language = state.topic.match(/[\u4e00-\u9fa5]/) ? 'zh' : 'en';
+            const openingPrompt = generateAIHostOpeningPrompt(state, state.bootstrapContext || '', language as 'en' | 'zh');
+            bootstrapContent = `\n[DEBATE BACKGROUND]\n${state.bootstrapContext || ''}\n\n[OPENING INSTRUCTION]\n${openingPrompt}\n`;
+
+            // Override the system prompt for AI Moderator opening
+            systemPromptOverride = openingPrompt;
+        } else if (state.bootstrapContext) {
+            // Normal case: just include brief context
+            bootstrapContent = `\n[DEBATE BACKGROUND]\n${state.bootstrapContext}\n`;
+        }
+
+        const finalSystemPrompt = systemPromptOverride || currentAgent.systemPrompt;
+
+        // FIX ISSUE #5 (Prompt Leaking):
+        // If overridePrompt looks like an internal system instruction (starts with [), do NOT include it in [CURRENT TASK]
+        // This prevents the model from regurgitating "[OPENING_AI_HOST]: You are..."
+        const safeOverridePrompt = (overridePrompt && overridePrompt.startsWith('['))
+            ? "Execute your role according to your specific system instructions."
+            : (overridePrompt || "Continue the discussion naturally.");
+
+        // FIX ISSUE #4 (Explicit Schedule Context):
+        // Inject upcoming speakers context so models know who is next
+        const upcomingSpeakers = getUpcomingSpeakers(state, 3);
+        const upcomingNames = upcomingSpeakers.map(id => {
+            const ag = state.agents.find(a => a.id === id);
+            return ag?.name || (id === 'user' ? 'User' : 'Unknown');
+        }).join(' -> ');
+
+        const scheduleContext = upcomingNames
+            ? `[UPCOMING SPEAKERS]: ${upcomingNames} -> ... (Please be concise if others are waiting)`
+            : ``;
 
         const enhancedSystemPrompt = `
 [DEBATE CONTEXT]
@@ -137,16 +270,22 @@ ${bootstrapContent}
 Mode: ${state.debateMode}
 Current Phase: ${state.currentStage}
 Round: ${state.currentRound}
+${scheduleContext}
 
 [IDENTITY]
 Your name is ${currentAgent.name}. Role: ${currentAgent.role}.
 Always stay in character. If you are the Moderator, focus on facilitating according to System instructions.
 
 [PERSONALITY]
-${currentAgent.systemPrompt}
+${finalSystemPrompt}
+
+[@MENTION MECHANISM]
+You can use @MemberName to directly address specific participants (e.g., "@Alice I agree with your point...").
+All participants will see highlighted mentions, and the mentioned member will notice it's directed at them.
+Use this to ask questions, respond to arguments, or direct attention in multi-person discussions.
 
 [CURRENT TASK]
-${overridePrompt || "Continue the debate naturally based on history."}
+${safeOverridePrompt}
 `.trim();
 
         const payload = {
@@ -156,7 +295,11 @@ ${overridePrompt || "Continue the debate naturally based on history."}
             baseURL: providerConfig?.baseURL,
             systemPrompt: enhancedSystemPrompt,
             temperature: currentAgent.temperature,
-            messages: historyContext
+            // CRITICAL FIX: For the very first turn (AI Opening), history is empty. 
+            // We MUST provide a User Text triggering the generation, otherwise the model might just autocomplete the system prompt or repeat instructions.
+            messages: isAIOpening
+                ? [{ role: 'user', content: "(System Trigger) The discussion is live. Please deliver your opening speech now, strictly adhering to your persona and the provided context." }]
+                : historyContext
         };
 
         let success = false;
@@ -198,7 +341,15 @@ ${overridePrompt || "Continue the debate naturally based on history."}
                             } else if (chunkContent || data.content === "") {
                                 // data.content === "" is sometimes sent as an "end of block" signal
                                 contentAccumulator += chunkContent;
-                                updateMessage(messageId, (thinkingAccumulator ? `<think>${thinkingAccumulator}</think>\n` : "") + contentAccumulator, false);
+
+                                // Sanitize: If output starts with internal tag, strip it
+                                // e.g. "[INSTRUCTION]: You are..." -> "You are..."
+                                let cleanContent = contentAccumulator;
+                                if (cleanContent.startsWith('[')) {
+                                    cleanContent = cleanContent.replace(/^\[[A-Z_]+\]:?\s*/, '');
+                                }
+
+                                updateMessage(messageId, (thinkingAccumulator ? `<think>${thinkingAccumulator}</think>\n` : "") + cleanContent, false);
                             }
                         } catch (e) { }
                     }
@@ -209,7 +360,12 @@ ${overridePrompt || "Continue the debate naturally based on history."}
             const duration = endTime - startTime;
             const estimatedTokens = Math.ceil((thinkingAccumulator.length + contentAccumulator.length) / 4);
 
-            const finalContent = (thinkingAccumulator ? `<think>${thinkingAccumulator}</think>\n` : "") + contentAccumulator;
+            let finalCleanContent = contentAccumulator;
+            if (finalCleanContent.startsWith('[')) {
+                finalCleanContent = finalCleanContent.replace(/^\[[A-Z_]+\]:?\s*/, '');
+            }
+
+            const finalContent = (thinkingAccumulator ? `<think>${thinkingAccumulator}</think>\n` : "") + finalCleanContent;
 
             // SCHEDULER HARDENING: Detection of "Stuck" agent
             // If content is empty (and it's not the initial bootstrap which might be slow but usually has content)
@@ -257,8 +413,10 @@ ${overridePrompt || "Continue the debate naturally based on history."}
         if (schedule.nextStage) setCurrentStage(schedule.nextStage);
         if (schedule.nextRound) setCurrentRound(schedule.nextRound);
 
-        // Notify with System Signal
-        if (schedule.instruction && schedule.instruction !== lastSystemInstruction.current) {
+        // Notify with System Signal (skip for bootstrap phase as it's done behind the scenes)
+        // Also skip internal scheduling instructions (those starting with '[' like [OPENING_AI_HOST])
+        const isInternalInstruction = schedule.instruction?.startsWith('[');
+        if (schedule.instruction && schedule.instruction !== lastSystemInstruction.current && schedule.phase !== 'bootstrap' && !isInternalInstruction) {
             addMessage({
                 role: 'system',
                 senderId: 'system',
@@ -274,19 +432,30 @@ ${overridePrompt || "Continue the debate naturally based on history."}
         }
     };
 
-    // Bootstrap Effect
+    // Bootstrap Effect - Start the debate
     useEffect(() => {
         if (status === 'active' && !currentTurn && history.length === 0) {
             const startSchedule = getSchedule(useRoomStore.getState());
-            addMessage({
-                role: 'system',
-                senderId: 'system',
-                content: startSchedule.instruction
-            });
-            lastSystemInstruction.current = startSchedule.instruction;
-            setTurn(startSchedule.nextTurn);
+
+            // For bootstrap phase, we don't add a message to history (it's done behind the scenes)
+            // Just set the turn to start the process
+            if (startSchedule.phase === 'bootstrap') {
+                setTurn(startSchedule.nextTurn);
+            } else {
+                // For other phases, add the system instruction
+                addMessage({
+                    role: 'system',
+                    senderId: 'system',
+                    content: startSchedule.instruction
+                });
+                lastSystemInstruction.current = startSchedule.instruction;
+                setTurn(startSchedule.nextTurn);
+            }
         }
     }, [status, currentTurn, history.length, addMessage, setTurn]);
+
+    // Store last schedule instruction for overridePrompt
+    const lastScheduleRef = useRef<ScheduleResult | null>(null);
 
     // Loop Effect
     useEffect(() => {
@@ -295,10 +464,23 @@ ${overridePrompt || "Continue the debate naturally based on history."}
         if (state.currentTurn === 'user') return;
 
         // In Classic/Custom mode, if it's a Participant turn, Moderator often speaks first to facilitate.
-        // But the scheduler decides who's next. 
+        // But the scheduler decides who's next.
         // If the scheduler says Pro is next, the turn IS Pro.
 
-        runTurn();
+        // Pass the schedule instruction as overridePrompt ONLY if it's NOT a standard discussion turn
+        // For standard "Next speaker is..." instructions, we don't want to force them into the prompt
+        // because it causes the model to repeat "Next speaker is..." instead of speaking.
+        const schedule = getSchedule(state);
+        lastScheduleRef.current = schedule;
+
+        // FIX ISSUE #6 (Scheduler Skip):
+        // If it's just a standard turn switch (discussion phase), DO NOT pass the instruction as override.
+        // The agent already knows it's their turn because they are being called.
+        // We only pass override if it's a specific system directive (like "Summarize now" or "Opening Speech").
+        const isStandardTurnSwitch = schedule.phase === 'discussion' && schedule.instruction.includes("[SYSTEM]");
+        const override = isStandardTurnSwitch ? undefined : schedule.instruction;
+
+        runTurn(undefined, override);
     }, [currentTurn, status]);
 
     runTurnRef.current = runTurn;
@@ -309,26 +491,43 @@ ${overridePrompt || "Continue the debate naturally based on history."}
         setIsEnding(true);
         stop();
         // Give it a tiny delay to ensure state propagates
-        setTimeout(() => {
+        setTimeout(async () => {
             const state = useRoomStore.getState();
             const schedule = getSchedule(state);
 
-            // Log for debugging
-            console.log("[CONDUCTOR] Manual End requested. Schedule:", schedule);
+            // Enhanced Summary Prompt
+            const summaryInstruction = `[SYSTEM]: The debate on "${state.topic}" has reached its conclusion. 
+Moderator, please provide a profound, elegant, and inspiring final summary. 
+Synthesize the key arguments from all participants, highlight the core tensions explored, and offer a visionary perspective on where the discussion leaves us. 
+Avoid a simple list; create a cohesive narrative that honors the depth of the shared exchange. 
+After providing this summary, the discussion will be officially closed.`;
 
             addMessage({
                 role: 'system',
                 senderId: 'system',
-                content: schedule.instruction
+                content: summaryInstruction
             });
 
             setTurn(schedule.nextTurn);
             setStatus('active');
 
-            // Force run the final turn manually because the effect might not trigger 
-            // if we were already in the moderator's turn (or already active)
+            // Force run the final turn manually
             if (schedule.nextTurn && schedule.nextTurn !== 'user') {
-                runTurn(schedule.nextTurn);
+                try {
+                    await runTurn(schedule.nextTurn, summaryInstruction);
+                } catch (err) {
+                    console.error("End summary failed:", err);
+                } finally {
+                    // Mark as completed AFTER the moderator finishes (or fails)
+                    // We must use setTimeout to ensure this happens after the state update from runTurn
+                    setTimeout(() => {
+                        useRoomStore.getState().setStatus('completed');
+                        setTurn(null); // Ensure no more turns are active
+                    }, 500);
+                }
+            } else {
+                setStatus('completed');
+                setTurn(null);
             }
         }, 100);
     };

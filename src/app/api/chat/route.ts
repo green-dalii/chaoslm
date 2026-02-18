@@ -38,6 +38,31 @@ export async function POST(req: NextRequest) {
 
         const stream = new ReadableStream({
             async start(controller) {
+                // Track if controller is closed to prevent errors on client disconnect
+                let isClosed = false;
+
+                const safeEnqueue = (data: Uint8Array) => {
+                    if (!isClosed) {
+                        try {
+                            controller.enqueue(data);
+                        } catch (e) {
+                            // Controller closed (client disconnected), mark as closed
+                            isClosed = true;
+                        }
+                    }
+                };
+
+                const safeClose = () => {
+                    if (!isClosed) {
+                        try {
+                            controller.close();
+                            isClosed = true;
+                        } catch (e) {
+                            // Already closed, ignore
+                        }
+                    }
+                };
+
                 try {
                     await provider.chatStream(
                         modelId,
@@ -46,17 +71,17 @@ export async function POST(req: NextRequest) {
                         finalApiKey,
                         (chunk) => {
                             const payload = `data: ${JSON.stringify(chunk)}\n\n`;
-                            controller.enqueue(encoder.encode(payload));
+                            safeEnqueue(encoder.encode(payload));
                         },
                         temperature
                     );
-                    controller.close();
+                    safeClose();
                 } catch (error) {
                     console.error("[API] Streaming error:", error);
                     // Critical: sending error as a chunk to avoid connection drop
                     const errPayload = `data: ${JSON.stringify({ error: String(error) })}\n\n`;
-                    controller.enqueue(encoder.encode(errPayload));
-                    controller.close();
+                    safeEnqueue(encoder.encode(errPayload));
+                    safeClose();
                 }
             },
         });

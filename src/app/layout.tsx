@@ -1,34 +1,34 @@
-import type { Metadata } from "next";
-// import { Geist, Geist_Mono } from "next/font/google";
+"use client";
+
+import { useSettingsStore } from "@/hooks/use-settings-store";
+import { useEffect, useState } from "react";
+import { Navbar } from "@/components/ui/Navbar";
 import "./globals.css";
-
-// const geistSans = Geist({
-//   variable: "--font-geist-sans",
-//   subsets: ["latin"],
-// });
-
-// const geistMono = Geist_Mono({
-//   variable: "--font-geist-mono",
-//   subsets: ["latin"],
-// });
-
-export const metadata: Metadata = {
-  title: "ChaosLM - Multi-Agent Debate Arena",
-  description: "Advanced multi-agent debate platform orchestrated by the Conductor.",
-};
 
 export default function RootLayout({
   children,
 }: Readonly<{
   children: React.ReactNode;
 }>) {
+  const { theme } = useSettingsStore();
+  const [mounted, setMounted] = useState(false);
+
+  useEffect(() => {
+    setMounted(true);
+  }, []);
+
+  // Determine dynamic theme class
+  const themeClass = mounted ? (theme === 'system' ? '' : theme) : '';
+
   return (
-    <html lang="en">
+    <html lang="en" className={themeClass}>
       <body
-        // className={`${geistSans.variable} ${geistMono.variable} antialiased bg-background text-foreground`}
-        className="antialiased bg-background text-foreground font-sans"
+        className="antialiased bg-background text-foreground font-sans h-screen overflow-hidden flex flex-col"
       >
-        {children}
+        <Navbar />
+        <main className="flex-1 overflow-hidden flex flex-col">
+          {children}
+        </main>
       </body>
     </html>
   );

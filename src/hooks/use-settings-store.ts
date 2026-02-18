@@ -1,0 +1,187 @@
+import { create } from "zustand";
+import { persist, createJSONStorage } from "zustand/middleware";
+
+export type Language = "en" | "zh";
+export type Theme = "light" | "dark" | "system";
+
+export interface SystemModelConfig {
+    providerId: string;
+    modelId: string;
+    apiKey?: string;
+    baseURL?: string;
+    temperature?: number;
+}
+
+interface SettingsState {
+    language: Language;
+    setLanguage: (lang: Language) => void;
+    theme: Theme;
+    setTheme: (theme: Theme) => void;
+    systemModel: SystemModelConfig | null;
+    setSystemModel: (config: SystemModelConfig | null) => void;
+    isSystemModelConfigured: () => boolean;
+}
+
+export const useSettingsStore = create<SettingsState>()(
+    persist(
+        (set, get) => ({
+            language: "en",
+            setLanguage: (language) => set({ language }),
+            theme: "system",
+            setTheme: (theme) => set({ theme }),
+            systemModel: null,
+            setSystemModel: (config) => set({ systemModel: config }),
+            isSystemModelConfigured: () => {
+                const config = get().systemModel;
+                return !!(config && config.providerId && config.modelId);
+            },
+        }),
+        {
+            name: "chaoslm-settings-storage",
+            storage: createJSONStorage(() => localStorage),
+        }
+    )
+);
+
+export const translations = {
+    en: {
+        nav: {
+            home: "Home",
+            arena: "Arena",
+            setup: "Setup",
+            github: "GitHub",
+            toggleTheme: "Toggle Theme"
+        },
+        home: {
+            title: "ChaosLM",
+            subtitle: "Orchestrate multi-agent discussions with precision, strict turn-taking, and efficient context management.",
+            start: "Start Session",
+            enterArena: "Enter Arena",
+            docs: "Documentation"
+        },
+        arena: {
+            sessions: "Sessions",
+            untitled: "Untitled Session",
+            deleteConfirm: "End session and delete data?",
+            importSuccess: "Session imported successfully!",
+            importFailed: "Failed to import session: ",
+            invalidFormat: "Invalid session format",
+            stop: "Stop",
+            endDebate: "End Discussion",
+            endConfirm: "Stop everything and let the Moderator provide a final summary?",
+            pause: "Pause",
+            resume: "Resume",
+            retry: "Retry",
+            waiting: "Waiting for the discussion to begin...",
+            clickStart: "Click \"Start\" to begin.",
+            typeMessage: "Type your message...",
+            waitingFor: "Waiting for {name}...",
+            liveMode: "Live Mode: Turns are enforced.",
+            paused: "Paused: You can configure the room.",
+            participants: "Members",
+            active: "Active",
+            speaking: "Speaking...",
+            nextUp: "Next Up",
+            thinking: "Thinking Process",
+            generating: "Generating final response..."
+        },
+        setup: {
+            title: "Setup Your Room",
+            roomConfig: "Room Configuration",
+            topicLabel: "Discussion Topic",
+            topicPlaceholder: "What is the meaning of life?",
+            roomNameLabel: "Room Name",
+            roomNamePlaceholder: "Philosophical Inquiry",
+            yourRole: "Your Role",
+            host: "Moderator (Host)",
+            participant: "Member",
+            observer: "Observer",
+            debateMode: "Discussion Mode",
+            standard: "Chaos Mode",
+            classic: "Classic (Opening -> Rebuttal -> Summary)",
+            custom: "Custom (Multi-Round)",
+            maxRounds: "Max Rounds",
+            advanced: "Advanced Settings",
+            temperature: "Temperature",
+            agentsTitle: "Member Management",
+            addAgent: "Add Member",
+            back: "Back",
+            startDebate: "Start Discussion",
+            noAgents: "No members added yet. Add at least one to start.",
+            showAdvanced: "Show Advanced",
+            hideAdvanced: "Hide Advanced",
+            modelKeys: "Models & Keys",
+            configureProviders: "Configure AI Providers"
+        }
+    },
+    zh: {
+        nav: {
+            home: "首页",
+            arena: "竞技场",
+            setup: "设置",
+            github: "GitHub",
+            toggleTheme: "切换主题"
+        },
+        home: {
+            title: "ChaosLM",
+            subtitle: "精密编排的多智能体讨论平台，支持严格的轮次管理与高效的上下文控制。",
+            start: "开始新会话",
+            enterArena: "进入竞技场",
+            docs: "项目文档"
+        },
+        arena: {
+            sessions: "历史会话",
+            untitled: "未命名讨论",
+            deleteConfirm: "确定要结束当前会话并删除数据吗？",
+            importSuccess: "会话导入成功！",
+            importFailed: "导入失败：",
+            invalidFormat: "格式错误",
+            stop: "停止",
+            endDebate: "结束讨论",
+            endConfirm: "是否停止讨论并让主持人进行总结？",
+            pause: "暂停",
+            resume: "继续",
+            retry: "重试",
+            waiting: "等待讨论开始...",
+            clickStart: "点击“开始”以启动。",
+            typeMessage: "输入消息...",
+            waitingFor: "等待 {name}...",
+            liveMode: "直播模式：严格轮次限制",
+            paused: "已暂停：您可以调整房间配置",
+            participants: "成员",
+            active: "活跃",
+            speaking: "正在发言...",
+            nextUp: "下一位",
+            thinking: "思考过程",
+            generating: "正在生成最终回复..."
+        },
+        setup: {
+            title: "配置讨论房间",
+            roomConfig: "房间设置",
+            topicLabel: "讨论主题",
+            topicPlaceholder: "生命的意义是什么？",
+            roomNameLabel: "房间名称",
+            roomNamePlaceholder: "哲学思辨",
+            yourRole: "您的角色",
+            host: "主持人 (掌控全局)",
+            participant: "成员 (加入讨论)",
+            observer: "观察员 (只读模式)",
+            debateMode: "讨论模式",
+            standard: "自由/混乱模式",
+            classic: "经典模式 (开场 -> 驳论 -> 总结)",
+            custom: "自定义 (多轮循环)",
+            maxRounds: "最大轮次",
+            advanced: "高级选项",
+            temperature: "温度 (Temperature)",
+            agentsTitle: "成员管理",
+            addAgent: "添加成员",
+            back: "上一步",
+            startDebate: "开始讨论",
+            noAgents: "尚未添加成员。请至少添加一个以开始。",
+            showAdvanced: "显示高级设置",
+            hideAdvanced: "隐藏高级设置",
+            modelKeys: "模型与密钥",
+            configureProviders: "配置 AI 供应商"
+        }
+    }
+};

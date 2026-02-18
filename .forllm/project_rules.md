@@ -69,3 +69,8 @@ This document outlines the First Principles, structural rules, and coding standa
     *   The UI must be clean, responsive, and free of visual clutter.
     *   Animations must be purposeful, not gratuitous.
     *   "Ugly" code or UI is a bug. Fix it.
+## 7. Meta-file Synchronization (CRITICAL)
+
+*   **Rule**: Project meta-files (e.g., `task.md`, `walkthrough.md`, `implementation_plan.md`, `changelog.md`) must be synchronized to the `.forllm/` directory whenever they are modified in the AI's internal directory.
+*   **Purpose**: This ensures the user and the system stay in sync regarding project status, planning, and historical changes within the codebase itself.
+*   **Action**: After any update to these files, the ASSISTANT must copy the updated version to the corresponding path in `.forllm/`.

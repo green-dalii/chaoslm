@@ -54,6 +54,9 @@ export interface IRoomState {
     currentRound: number;
     currentStage: ClassicStage;
     isEnding?: boolean;   // Manual override for "End Debate"
+
+    // NEW: Bootstrap Context - System preparation material (not displayed to users)
+    bootstrapContext?: string;
 }
 
 export interface IConductorConfig {
